@@ -120,6 +120,11 @@ canvis quan aquell rellotge arriba al moment programat, i per això la pantalla 
 npm install        # esbuild
 npm test           # proves (node:test): acords, iReal, arpegis, seqüenciador, acompanyament
 npm run build      # genera docs/ (GitHub Pages) i embed/ (versió per incrustar en una altra pàgina)
+```
+
+En cada canvi a `main`, GitHub Actions (`.github/workflows/pages.yml`) passa els tests, genera `docs/` i publica l'app a GitHub Pages.
+
+```
 npm run dev        # build + servidor local a http://localhost:8080
 ```
 
