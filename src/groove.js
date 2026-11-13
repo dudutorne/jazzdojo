@@ -205,7 +205,7 @@ export class Groove {
     const top = Math.max(0, (cx - 0.8) / 0.2);
     const walkOpts = { pairs: true, pChrom: 0.5 * top, pSkip: 0.09 * (0.3 + 1.4 * bcx) + 0.15 * top, pGhost: 0.7 - 0.45 * top };
     return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, m: 0.3 + 1.4 * cx,
-      bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.4 + 1.6 * hcx, top, walkOpts };
+      bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.6 + 2 * hcx, top, walkOpts };
   }
 
   /* ================= 4/4 in quarters: hand-tuned grooves ================= */
@@ -221,8 +221,9 @@ export class Groove {
       if (back) D('ride', off, 0.42);
       if (back) D('hhpedal', t, 0.75);
       if (this.rng() < 0.55) D('kick', t, 0.18);
-      if (this.rng() < 0.16 * busy) D('snare', off, 0.2);
-      else if (this.rng() < 0.06 * busy) D('snare', t, 0.45);
+      // snare comping: ghost notes on the "and" and the odd accent on the beat
+      if (this.rng() < 0.34 * busy) D('snare', off, 0.22 * this.r(0.8, 1.2));
+      if (this.rng() < 0.14 * busy) D('snare', t, 0.42 * this.r(0.8, 1.15));
       if (cx > 0.7 && !back && this.rng() < 0.15 * busy) D('kick', off, 0.3);          // busier: kick/snare chatter
       if (lastBeatOfPhrase && this.rng() < Math.min(0.95, 0.7 * busy)) { D('snare', t, 0.5); D('snare', t + spb / 3, 0.3); D('snare', off, 0.6); if (this.rng() < 0.4) D('kick', off, 0.6); }
       if (b === 0 && info.barNo % 8 === 1 && info.barNo > 1 && this.rng() < busy) D('kick', t, 0.55);
@@ -231,6 +232,7 @@ export class Groove {
       if (b % 2 === 1) { D('hhpedal', t, 0.6); if (this.rng() < 0.5) D('ride', off, 0.25); }
       if (b === 0) D('kick', t, 0.3);
       if (b === 2 && this.rng() < 0.3) D('xstick', t, 0.35);
+      if (this.rng() < 0.15 * busy) D('snare', off, 0.14);
     } else if (style === 'bossa') {
       D('hhclosed', t, b === 0 ? 0.55 : 0.45); D('hhclosed', off, 0.3);
       if (b % 2 === 0) { D('kick', t, 0.62); D('kick', t + 1.5 * spb, 0.35); }
@@ -238,6 +240,7 @@ export class Groove {
       const clave = [0, 3, 6, 10, 12];
       if (clave.includes(e)) D('xstick', t, 0.7);
       if (clave.includes(e + 1)) D('xstick', off, 0.7);
+      if (!clave.includes(e + 1) && this.rng() < 0.18 * busy) D('snare', off, 0.16);   // soft ghost notes between the clave
     } else {
       D('hhclosed', t, 0.6); D('hhclosed', off, 0.38);
       if (b % 2 === 0) D('kick', t, 0.85); else D('snare', t, 0.8);
@@ -295,7 +298,8 @@ export class Groove {
     const planBar = () => {
       const left = Math.min(num, ev.beats - bi);
       const opts = left >= 4 && hcx < 0.3 ? [[0], [0, 2], [1.5], [0, 2.5]]
-        : left >= 4 && hcx > 0.7 ? [[0, 1.5, 3], [0.5, 2, 3.5], [1.5, 2.5], [0, 1.5, 2.5], [0, 1, 2.5], [0.5, 1.5, 3]]
+        : left >= 4 && hcx > 0.9 ? [[0, 1, 1.5, 3], [0.5, 1.5, 2, 3.5], [0, 1.5, 2.5, 3.5], [0.5, 1, 2.5, 3], [0, 0.5, 2, 3], [0, 1.5, 2, 3.5]]
+        : left >= 4 && hcx > 0.7 ? [[0, 1.5, 3], [0.5, 2, 3.5], [0, 1.5, 2.5], [0, 1, 2.5], [0.5, 1.5, 3], [0, 1.5, 2.5, 3.5], [0.5, 2, 3]]
         : left >= 4 ? [[0, 1.5], [1.5], [0, 2.5], [0.5, 2], [1.5, 3], [0], [2.5], [0, 2]]
         : left === 3 ? [[0], [0, 1.5], [1.5], [0.5, 2]]
           : left === 2 ? [[0], [0.5], [0, 1.5]] : [[0]];
@@ -380,7 +384,8 @@ export class Groove {
         if (major && e !== 0 && !(hem && e === 2)) D('hhpedal', tt, 0.72);
         if (hem && (e === 0 || e === 3)) { D(e === 0 ? 'kick' : 'snare', tt, e === 0 ? 0.4 : 0.42); if (e === 3) D('ride', tt, 0.55); }
         else if (major && this.rng() < 0.5) D('kick', tt, e === 0 ? 0.3 : 0.18);
-        if (j === 1 && this.rng() < 0.14 * busy) D('snare', tt, 0.2);
+        if (j === 1 && this.rng() < 0.3 * busy) D('snare', tt, 0.22);
+        else if (j === 0 && this.rng() < 0.1 * busy) D('snare', tt, 0.4);
       } else if (jazz) {
         // odd groupings or x/8: the ride keeps flowing in eighths whatever the grouping; the groups only shape its
         // dynamics. Very fast tempos drop to quarter-note pulses (every 2 eighths, or the group starts in x/8).
@@ -397,7 +402,8 @@ export class Groove {
         if (e === 0) D('kick', tt, 0.4);
         else if (major && this.rng() < 0.3) D('kick', tt, 0.22);
         if (major && mi === g.majors.length - 1 && this.rng() < 0.4 * busy) D('xstick', tt, 0.35);
-        if (!start && this.rng() < 0.08 * busy) D('snare', tt, 0.18);
+        if (!start && this.rng() < 0.22 * busy) D('snare', tt, 0.2);
+        else if (start && this.rng() < 0.08 * busy) D('snare', tt, 0.38);
       } else {
         D('hhclosed', tt, start ? 0.55 : 0.32);
         if (major) {
