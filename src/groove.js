@@ -114,7 +114,7 @@ export class Groove {
         if (typeof out[i] !== 'number' || this.rng() >= pSkip) continue;
         const a = out[i], nx = typeof out[i + 1] === 'number' ? out[i + 1] : out[i + 1].a;
         const step = cands.filter(m => m !== a && Math.abs(m - a) <= 4).sort((x, y) => Math.abs(x - nx) - Math.abs(y - nx))[0];
-        const ghost = this.rng() < 0.7 || step === undefined;   // usually a muted "dead" note on the same pitch
+        const ghost = this.rng() < (o.pGhost ?? 0.7) || step === undefined; // usually a muted "dead" note on the same pitch
         out[i] = { a, b: ghost ? a : step, ghost };
       }
     }
@@ -199,10 +199,13 @@ export class Groove {
     };
     // complexity 0…1 (fader): 0.5 is the default groove; probabilities of extra hits scale ×0.3 … ×1.7
     const cx = o.complexity ?? 0.5;
-    // the bass plays a little simpler than the fader says, the harmony a little richer
-    const bcx = Math.max(0, cx - 0.18), hcx = Math.min(1, cx + 0.18);
+    // the bass plays a little simpler than the fader says, the harmony clearly richer
+    const bcx = Math.max(0, cx - 0.18), hcx = Math.min(1, cx + 0.3);
+    // near the top of the fader the walking bass adds swung eighths, some of them chromatic approach notes
+    const top = Math.max(0, (cx - 0.8) / 0.2);
+    const walkOpts = { pairs: true, pChrom: 0.5 * top, pSkip: 0.09 * (0.3 + 1.4 * bcx) + 0.15 * top, pGhost: 0.7 - 0.45 * top };
     return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, m: 0.3 + 1.4 * cx,
-      bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.3 + 1.4 * hcx };
+      bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.4 + 1.6 * hcx, top, walkOpts };
   }
 
   /* ================= 4/4 in quarters: hand-tuned grooves ================= */
@@ -251,8 +254,7 @@ export class Groove {
           : bcx < 0.6 ? (this.rng() < (bcx - 0.35) * 3.2 ? 'walk' : 'two')
             : 'walk';
       const pairs = style === 'swing' && this.bassMode === 'walk' && bcx >= 0.5;
-      this.line = this.walk(ch, ev.beats, info.nextEv && info.nextEv.chord,
-        pairs ? { pairs: true, pChrom: 0, pSkip: 0.09 * x.bm } : {});
+      this.line = this.walk(ch, ev.beats, info.nextEv && info.nextEv.chord, pairs ? x.walkOpts : {});
     }
     const line = this.line || [this.nearest(ch.root, 36)];
     const val = n => (typeof n === 'number' ? n : n.a);
@@ -267,7 +269,8 @@ export class Groove {
       if (bi % 4 === 0) B(at(bi), t, spb * Math.min(3, left) * 0.93, 1);                      // dotted half…
       else if (bi % 4 === 3) B(at(ev.beats - 1), t, spb * 0.9, 0.85);                          // …and a quarter into the next
     } else if (style === 'swing' && mode === 'two') {
-      if (bi % 2 === 0) B(at(bi), t, spb * Math.min(2, left) * 0.93, bi === 0 ? 1 : 0.85);     // two-feel: half notes
+      // two-feel: half notes; the last one of the chord is the approach note into the next chord
+      if (bi % 2 === 0) B(bi > 0 && left <= 2 ? at(ev.beats - 1) : at(bi), t, spb * Math.min(2, left) * 0.93, bi === 0 ? 1 : 0.85);
     } else if (style === 'swing') {
       const n = line[Math.min(bi, line.length - 1)];
       if (typeof n === 'number') B(n, t, spb * 0.88, bi === 0 ? 1 : 0.85);
@@ -426,7 +429,7 @@ export class Groove {
         if (!jazz && g.majorSet.has((be + 1) % g.E) && this.rng() < 0.3 * x.bm) hits.push(k); // pickup into a group
       }
       const pairs = walkAll && pb === 2;
-      const line = jazz ? this.walk(ch, hits.length, nextCh, pairs ? { pairs, pChrom: 0, pSkip: 0.09 * x.bm } : {})
+      const line = jazz ? this.walk(ch, hits.length, nextCh, pairs ? x.walkOpts : {})
         : hits.map((k, i) => {
           const root = this.nearest(ch.bass ?? ch.root, Math.min(Math.max(this.lastBass, 31), 45), 28, 47);
           if (i === 0) return root;

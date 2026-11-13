@@ -51,7 +51,7 @@ const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).sli
 const DEFAULT_IREAL = 'irealb://Acordes%209%20Y%20b9%201=Pierdomenico%20Ariel==Tango=C==1r34LbKcu7L9%5EBZ4C%5E9LZL9%5EbDZL9%5EbAZL%5E9bEZL9%5EbBZL9%5EFZGb%5E9L5TA%2A%5BL9bDZZA%5E9LL9bEZL9bBZL9FZ9LCB%2A%5B%209%5EGZL9%5EDZZAb9LL9%5EEZbEZL9ZB9LZL9b7FZL9b7CC%2A%5B%20%5D9GZL9DZL9AZL9EZBb7bL9bGZZL9b7Ab7b97AZL9b7EZL9b7BLZ9b7bGZL9b7bDZLb9LZDZL9b7%2DBZL9%5B%2ADC%2D9%2DbDZL9%2DbAZL9%2DEbZL9%2DbBZL9%2DFZL9LZGb%2D%209b7GDZLhb9LZA%2DEZLhbBZLhFZLhC%2AA%7B%5D%209%2DGZL9%2DDZL9bhLZA%2DEZL95%237bBbhLZBFZL5%237CB%2A%7B%7D%20hGLZhDZLhAZLhEZL%2Ch7%235LZGZLhb7DZL5%235LZA5%237EZL5%237BZL5%23b7GZL5%237bDZL5%237bLZA7%237bEZL%5E%2DbDZ7%235%20%7DAZL9%5E%2DbEZL9%5E%2DbZBL9%5E%2DFZL9%5E%2DCC%2A%5Bb%2D%5E9LGZL5%239LZGb%2D%5E9LZB%2D%5E9LZE%2D%5E9LZA%2D%5E9LZD%2D%5E9LZG%2D%5E9%20%5D%20=Latin%2DBrazil%3A%20Bossa%20Electric=60=1';
 function defaultExercise() {
   const s = parseIReal(DEFAULT_IREAL)[0];
-  return { ...s, id: 'demo0', title: 'Cicle de quartes · tots els acords de 9 i ♭9', style: 'bossa', level: 'blanc', goals: ['cicle de quartes', 'extensions'], key: 'totes' };
+  return { ...s, id: 'demo0', title: 'Cicle de quartes · tots els acords de 9 i ♭9', style: 'swing', level: 'blanc', goals: ['cicle de quartes', 'extensions'], key: 'totes' };
 }
 function seedLibrary() {
   const a = generateCycle(['^9', '9', '-9'], 5, 0, 1);
@@ -73,6 +73,12 @@ if (S.v < 5) {
   store.set('jd.library', library);
 }
 if (S.v < 6) S.v = 6;
+// v7: the default exercise plays swing
+if (S.v < 7) {
+  const d = library.find(x => x.id === 'demo0');
+  if (d && d.style === 'bossa') { d.style = 'swing'; store.set('jd.library', library); }
+  S.v = 7;
+}
 const saveLib = () => store.set('jd.library', library);
 
 /* ---------------- runtime state ---------------- */
