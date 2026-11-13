@@ -22,7 +22,7 @@ const DEF = {
   degrees: [1, 3, 5, 7, 9], len: 5, source: 'random', order: 'shuffle',
   sets: [{ id: 'set1', name: 'Bàsics', text: '13579, 53971, 97531, 35791, 1357, 7531' }], setId: 'set1',
   change: 'chord', every: { beats: 2, bars: 2 }, syncChord: true, laps: 'new',
-  leadBeats: 2, harmonyPop: 'piano', countBars: 1, complexity: 0.5, harmony: 'piano', theme: 'dark', vol: { bass: 0.6, drums: 0.7, comp: 0.6, master: 0.85 },
+  leadBeats: 2, harmonyPop: 'piano', countBars: 1, complexity: 0.5, harmony: 'piano', theme: 'dark', vol: { bass: 0.5, drums: 0.7, comp: 0.6, master: 0.85 },
   songId: null, songPrefs: {}, hideNames: false,
 };
 const S = Object.assign({}, DEF, store.get('jd.settings', {}));
@@ -38,6 +38,8 @@ if ((S.v || 0) < 3) {
   delete S.onlyWritten;
   S.v = 3;
 }
+// v6: the bass is quieter by default
+if ((S.v || 0) >= 3 && S.v < 6 && S.vol.bass === 0.6) S.vol.bass = 0.5;
 // v4: new defaults — the next arpeggio shows 2 beats early, a 1-bar count-in
 if (S.v < 4) { S.leadBeats = 2; S.countBars = 1; S.v = 4; }
 if (S.change !== 'chord' && S.change !== 'bars') S.change = 'chord'; // "every N beats" was removed
@@ -70,6 +72,7 @@ if (S.v < 5) {
   S.songId = 'demo0'; S.v = 5;
   store.set('jd.library', library);
 }
+if (S.v < 6) S.v = 6;
 const saveLib = () => store.set('jd.library', library);
 
 /* ---------------- runtime state ---------------- */

@@ -123,12 +123,11 @@ export class Groove {
     return out.slice(0, n);
   }
 
-  /** Voicing register: mostly low-middle (guitar around G2–D4, keys around C3–G4); now and then lifted for colour. */
+  /** Voicing register: low-middle (guitar around G2–D4, keys around C3–G4), moving as little as possible. */
   voiceFor(ch, inst, style) {
     const c = style === 'even' ? popChord(ch) : ch;
-    const lift = this.rng() < 0.15 ? 7 : 0;
-    if (inst === 'guitar') return this.voicing(c, 43 + lift, 62 + lift, style === 'even' ? 4 : 3, 52 + lift);
-    return this.voicing(c, 46 + lift, 66 + lift, 4, 55 + lift);
+    if (inst === 'guitar') return this.voicing(c, 43, 62, style === 'even' ? 4 : 3, 52);
+    return this.voicing(c, 46, 66, 4, 55);
   }
 
   /** Close rootless voicing with smooth voice leading. */
@@ -144,8 +143,12 @@ export class Groove {
         for (let k = 1; k < order.length; k++) { let m = notes[k - 1] + 1; while (m % 12 !== order[k]) m++; notes.push(m); }
         if (notes[notes.length - 1] > hi) continue;
         const avg = notes.reduce((a, b) => a + b, 0) / notes.length;
-        // follow the previous voicing, but keep pulling towards the middle so the comping doesn't creep upwards
-        const score = Math.abs(avg - target) + Math.abs(avg - center) * 0.7 + Math.max(0, notes[notes.length - 1] - (hi - 3)) * 1.5;
+        // smooth voice leading: stay close to the previous voicing (its average and its top note), with only a gentle
+        // pull towards the middle so the comping doesn't creep up or down over time; big jumps are penalised hard
+        const top = notes[notes.length - 1], lastTop = this.lastVoicing ? this.lastVoicing[this.lastVoicing.length - 1] : center + 5;
+        const move = Math.abs(avg - target);
+        const score = move + Math.max(0, move - 3) * 2 + Math.abs(top - lastTop) * 0.4 + Math.abs(avg - center) * 0.3
+          + Math.max(0, top - (hi - 3)) * 1.5;
         if (score < bestScore) { bestScore = score; best = notes; }
       }
     }
@@ -196,13 +199,16 @@ export class Groove {
     };
     // complexity 0…1 (fader): 0.5 is the default groove; probabilities of extra hits scale ×0.3 … ×1.7
     const cx = o.complexity ?? 0.5;
-    return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, m: 0.3 + 1.4 * cx };
+    // the bass plays a little simpler than the fader says, the harmony a little richer
+    const bcx = Math.max(0, cx - 0.18), hcx = Math.min(1, cx + 0.18);
+    return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, m: 0.3 + 1.4 * cx,
+      bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.3 + 1.4 * hcx };
   }
 
   /* ================= 4/4 in quarters: hand-tuned grooves ================= */
   beat44(info, o, x) {
     const { t, spb, ev, bi } = info;
-    const { D, B, C, off, sw, style, ch, inst, cx, m: busy } = x;
+    const { D, B, C, off, sw, style, ch, inst, cx, bcx, hcx, m: busy } = x;
     const num = 4, b = info.bib;
     const lastBeatOfPhrase = b === num - 1 && info.barNo % 4 === 0;
 
@@ -240,13 +246,13 @@ export class Groove {
     // bass
     if (info.chordStart) {
       // how the bass plays this chord depends on the complexity: long notes when simple, walking when busy
-      this.bassMode = cx < 0.15 ? 'whole'
-        : cx < 0.35 ? (this.rng() < 0.3 ? 'dotted' : 'two')
-          : cx < 0.6 ? (this.rng() < (cx - 0.35) * 3.2 ? 'walk' : 'two')
+      this.bassMode = bcx < 0.15 ? 'whole'
+        : bcx < 0.35 ? (this.rng() < 0.3 ? 'dotted' : 'two')
+          : bcx < 0.6 ? (this.rng() < (bcx - 0.35) * 3.2 ? 'walk' : 'two')
             : 'walk';
-      const pairs = style === 'swing' && this.bassMode === 'walk' && cx >= 0.5;
+      const pairs = style === 'swing' && this.bassMode === 'walk' && bcx >= 0.5;
       this.line = this.walk(ch, ev.beats, info.nextEv && info.nextEv.chord,
-        pairs ? { pairs: true, pChrom: 0, pSkip: 0.09 * busy } : {});
+        pairs ? { pairs: true, pChrom: 0, pSkip: 0.09 * x.bm } : {});
     }
     const line = this.line || [this.nearest(ch.root, 36)];
     const val = n => (typeof n === 'number' ? n : n.a);
@@ -267,17 +273,17 @@ export class Groove {
       if (typeof n === 'number') B(n, t, spb * 0.88, bi === 0 ? 1 : 0.85);
       else { B(n.a, t, sw * spb * 0.92, 0.88); B(n.b, off, (1 - sw) * spb * 0.9, n.ghost ? 0.6 : 0.72, !!n.ghost); } // swung pair of eighths
     } else if (style === 'ballad') {
-      if (cx < 0.3) { if (bi % 4 === 0) B(bi === 0 ? root : at(bi), t, spb * Math.min(4, left) * 0.95, 0.9); }
+      if (bcx < 0.3) { if (bi % 4 === 0) B(bi === 0 ? root : at(bi), t, spb * Math.min(4, left) * 0.95, 0.9); }
       else if (bi === 0) B(root, t, spb * Math.min(ev.beats, 2) * 0.95, 0.9);
       else if (bi % 2 === 0) B(at(bi), t, spb * 1.9, 0.75);
     } else if (style === 'bossa') {
-      if (cx < 0.3) { if (b % 2 === 0) B(b % 4 === 0 || bi === 0 ? root : fifth, t, spb * Math.min(2, left) * 0.93, 0.95); }
+      if (bcx < 0.3) { if (b % 2 === 0) B(b % 4 === 0 || bi === 0 ? root : fifth, t, spb * Math.min(2, left) * 0.93, 0.95); }
       else if (b % 2 === 0) B(b % 4 === 0 || bi === 0 ? root : fifth, t, spb * 1.4, 0.95);
       else B(b % 4 === 1 ? fifth : root, t + spb * 0.5, spb * 0.45, 0.6);
     } else {
       const n = b % 4 === 2 ? fifth : root;
-      if (cx < 0.3) { if (b % 2 === 0) B(n, t, spb * Math.min(2, left) * 0.93, 1); }       // half notes
-      else if (cx < 0.6) B(n, t, spb * 0.9, b % 2 === 0 ? 1 : 0.8);                           // quarters
+      if (bcx < 0.3) { if (b % 2 === 0) B(n, t, spb * Math.min(2, left) * 0.93, 1); }       // half notes
+      else if (bcx < 0.6) B(n, t, spb * 0.9, b % 2 === 0 ? 1 : 0.8);                           // quarters
       else { B(n, t, spb * 0.45, b % 2 === 0 ? 1 : 0.75); B(n, t + spb * 0.5, spb * 0.4, 0.6); } // eighths
     }
 
@@ -285,8 +291,8 @@ export class Groove {
     const skip0 = bi === 0 && this.antSkip; // the chord was already anticipated: don't hit it again on the downbeat
     const planBar = () => {
       const left = Math.min(num, ev.beats - bi);
-      const opts = left >= 4 && cx < 0.3 ? [[0], [0, 2], [1.5], [0, 2.5]]
-        : left >= 4 && cx > 0.7 ? [[0, 1.5, 3], [0.5, 2, 3.5], [1.5, 2.5], [0, 1.5, 2.5], [0, 1, 2.5], [0.5, 1.5, 3]]
+      const opts = left >= 4 && hcx < 0.3 ? [[0], [0, 2], [1.5], [0, 2.5]]
+        : left >= 4 && hcx > 0.7 ? [[0, 1.5, 3], [0.5, 2, 3.5], [1.5, 2.5], [0, 1.5, 2.5], [0, 1, 2.5], [0.5, 1.5, 3]]
         : left >= 4 ? [[0, 1.5], [1.5], [0, 2.5], [0.5, 2], [1.5, 3], [0], [2.5], [0, 2]]
         : left === 3 ? [[0], [0, 1.5], [1.5], [0.5, 2]]
           : left === 2 ? [[0], [0.5], [0, 1.5]] : [[0]];
@@ -328,14 +334,14 @@ export class Groove {
       const left = ev.beats - bi;
       if (inst === 'synth') {
         if (bi === 0 && !skip0) C(t, ev.beats * 0.98 * spb, 0.55);                                  // held chord
-        if (cx > 0.6 && bi > 0) C(off, 0.3 * spb, 0.35);                                             // light pulse
+        if (hcx > 0.6 && bi > 0) C(off, 0.3 * spb, 0.35);                                             // light pulse
       } else if (inst === 'guitar') {
-        if (cx < 0.3) { if ((bi === 0 && !skip0) || (bi % 4 === 0 && bi > 0)) C(t, Math.min(4, left) * 0.95 * spb, 0.55, 0.015); }
-        else if (cx < 0.6) { if (!(bi === 0 && skip0)) C(t, 0.85 * spb, b % 2 ? 0.45 : 0.55, 0.012); }  // quarter strums
+        if (hcx < 0.3) { if ((bi === 0 && !skip0) || (bi % 4 === 0 && bi > 0)) C(t, Math.min(4, left) * 0.95 * spb, 0.55, 0.015); }
+        else if (hcx < 0.6) { if (!(bi === 0 && skip0)) C(t, 0.85 * spb, b % 2 ? 0.45 : 0.55, 0.012); }  // quarter strums
         else { if (!(bi === 0 && skip0)) C(t, 0.45 * spb, 0.5, 0.012); C(off, 0.4 * spb, b % 2 ? 0.58 : 0.42, 0.01); } // eighths, accent on 2& and 4&
       } else {
-        if (cx < 0.3) { if ((bi === 0 && !skip0) || b === 2) C(t, Math.min(2, left) * 0.95 * spb, 0.5); }
-        else if (cx < 0.7) {
+        if (hcx < 0.3) { if ((bi === 0 && !skip0) || b === 2) C(t, Math.min(2, left) * 0.95 * spb, 0.5); }
+        else if (hcx < 0.7) {
           if (bi === 0 && !skip0) C(t, Math.min(ev.beats, num) * 0.9 * spb, 0.5);
           if (b % 2 === 1) C(off, 0.3 * spb, 0.55);
         } else { if (!(bi === 0 && skip0)) C(t, 0.4 * spb, b === 0 ? 0.6 : 0.45); C(off, 0.35 * spb, 0.4); } // pumping eighths
@@ -408,19 +414,19 @@ export class Groove {
       // bass hits: the felt groups (plus, the busier the setting, some of the smaller groups)
       let hits = [];
       const waltz = o.meter.num === 3 && o.meter.den === 4 && !g.oddGroups;
-      const walkAll = jazz && style === 'swing' && !straight && x.cx >= 0.35 && this.rng() < Math.min(0.9, (waltz ? 0.35 : 0.5) * busy);
+      const walkAll = jazz && style === 'swing' && !straight && x.bcx >= 0.35 && this.rng() < Math.min(0.9, (waltz ? 0.35 : 0.5) * x.bm);
       for (let k = 0; k < lenE; k++) {
         const be = barE(k);
         if (k === 0) { hits.push(k); continue; }
         if (walkAll) { if (k % 2 === 0) hits.push(k); continue; }
-        if (x.cx < 0.25) { if (be === 0) hits.push(k); continue; }               // simple: one long note per bar
+        if (x.bcx < 0.25) { if (be === 0) hits.push(k); continue; }               // simple: one long note per bar
         if (waltz && jazz) { if (be === 4 || be === 0) hits.push(k); continue; } // "1 . 3"
         if (g.majorSet.has(be)) { hits.push(k); continue; }
-        if (g.startSet.has(be) && x.cx >= 0.5 && this.rng() < 0.35 * busy) { hits.push(k); continue; }
-        if (!jazz && g.majorSet.has((be + 1) % g.E) && this.rng() < 0.3 * busy) hits.push(k); // pickup into a group
+        if (g.startSet.has(be) && x.bcx >= 0.5 && this.rng() < 0.35 * x.bm) { hits.push(k); continue; }
+        if (!jazz && g.majorSet.has((be + 1) % g.E) && this.rng() < 0.3 * x.bm) hits.push(k); // pickup into a group
       }
       const pairs = walkAll && pb === 2;
-      const line = jazz ? this.walk(ch, hits.length, nextCh, pairs ? { pairs, pChrom: 0, pSkip: 0.09 * busy } : {})
+      const line = jazz ? this.walk(ch, hits.length, nextCh, pairs ? { pairs, pChrom: 0, pSkip: 0.09 * x.bm } : {})
         : hits.map((k, i) => {
           const root = this.nearest(ch.bass ?? ch.root, Math.min(Math.max(this.lastBass, 31), 45), 28, 47);
           if (i === 0) return root;
@@ -438,7 +444,7 @@ export class Groove {
       });
       // now and then a ghost note on the last eighth before the next chord (a muted repeat of the previous note)
       const lastK = lenE - 1;
-      if (nextCh && lenE >= 3 && !plan.has(lastK) && x.cx >= 0.35 && this.rng() < 0.15 * busy) {
+      if (nextCh && lenE >= 3 && !plan.has(lastK) && x.bcx >= 0.35 && this.rng() < 0.15 * x.bm) {
         const prevK = Math.max(...[...plan.keys()].filter(k => k < lastK));
         plan.get(prevK).len = lastK - prevK;
         plan.set(lastK, { midi: plan.get(prevK).midi, len: 1, ghost: true });
@@ -453,13 +459,13 @@ export class Groove {
         let p;
         if (k === 0) p = this.antSkip ? 0 : (style === 'ballad' ? 1 : 0.62);
         else if (inst === 'guitar' && jazz && !straight) p = k % 2 === 0 ? 1 : 0;  // four (three, five…) to the bar
-        else if (inst === 'guitar' && style === 'even') p = (start ? 0.3 : 0.6) * busy;
-        else if (style === 'ballad') p = major ? 0.2 * busy : 0;
+        else if (inst === 'guitar' && style === 'even') p = (start ? 0.3 : 0.6) * x.hm;
+        else if (style === 'ballad') p = major ? 0.2 * x.hm : 0;
         else if (waltz && this.bar.hemiola) p = be === 3 ? 0.7 : 0;
-        else if (major) p = 0.4 * busy;
-        else if (start) p = 0.2 * busy;
-        else if (g.majorSet.has((be + 1) % g.E)) p = 0.2 * busy;            // just before a group: syncopation
-        else p = (pb === 2 && k % 2 === 1 ? 0.1 : 0.05) * busy;
+        else if (major) p = 0.4 * x.hm;
+        else if (start) p = 0.2 * x.hm;
+        else if (g.majorSet.has((be + 1) % g.E)) p = 0.2 * x.hm;            // just before a group: syncopation
+        else p = (pb === 2 && k % 2 === 1 ? 0.1 : 0.05) * x.hm;
         if (this.rng() < p) comp.push(k);
       }
       if (!comp.length && !this.antSkip) comp.push(0);
