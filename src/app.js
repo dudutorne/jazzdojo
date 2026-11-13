@@ -6,7 +6,7 @@ import { Sequencer, layout } from './sequencer.js';
 import { Groove } from './groove.js';
 import { METERS, GROUPINGS, groupsOf, meterGrid, groupLabel } from './meter.js';
 import { AudioEngine } from './audio.js';
-import { getLang, setLang, startI18n } from './i18n.js';
+import { getLang, setLang, startI18n, LANGS, LANG_NAMES } from './i18n.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -872,8 +872,17 @@ applyTheme();
 loadSong(S.songId);
 requestAnimationFrame(visLoop);
 const LANG = getLang();
-setSeg('langSeg', LANG);
-$('langSeg').onclick = e => { const v = segVal(e); if (!v || v === LANG) return; setLang(v); location.reload(); };
+// language menu (names are written in their own language, so they are never translated)
+$('langMenu').innerHTML = LANGS.map(l => `<button role="menuitemradio" data-lang="${l}" lang="${l}" aria-checked="${l === LANG}" translate="no">${LANG_NAMES[l]}</button>`).join('');
+const langOpen = open => { $('langMenu').hidden = !open; $('langBtn').setAttribute('aria-expanded', String(open)); };
+$('langBtn').onclick = e => { e.stopPropagation(); langOpen($('langMenu').hidden); };
+$('langMenu').onclick = e => {
+  const b = e.target.closest('[data-lang]'); if (!b) return;
+  langOpen(false);
+  if (b.dataset.lang !== LANG) { setLang(b.dataset.lang); location.reload(); }
+};
+document.addEventListener('click', e => { if (!e.target.closest('.langwrap')) langOpen(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') langOpen(false); });
 startI18n(LANG);
 // offline mode only for the installed site (not when the page is embedded in another page)
 if ('serviceWorker' in navigator && location.protocol === 'https:' && window.self === window.top) {

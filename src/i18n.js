@@ -1,15 +1,16 @@
-// Interface language. The app is written in Catalan; English is applied on top by translating the text the page shows
+// Interface language. The app is written in Catalan; English and Spanish are applied on top by translating the text the page shows
 // (static markup and everything the app renders later), so the rest of the code stays in one language.
 
 const KEY = 'jd.lang';
-export const LANGS = ['ca', 'en'];
+export const LANGS = ['ca', 'es', 'en'];
+export const LANG_NAMES = { ca: 'Català', es: 'Castellano', en: 'English' };
 
 export function getLang() {
   try {
     const v = localStorage.getItem(KEY);
     if (LANGS.includes(v)) return v;
   } catch (e) { /* storage unavailable */ }
-  return 'ca'; // Catalan unless English was chosen
+  return 'ca'; // Catalan unless another language was chosen
 }
 export function setLang(v) {
   try { localStorage.setItem(KEY, v); } catch (e) { /* storage unavailable */ }
@@ -105,8 +106,89 @@ const EN = {
   'JazzDojo · fet per Edu Torné': 'JazzDojo · made by Edu Torné',
 };
 
+const ES = {
+  'Exercicis': 'Ejercicios', 'Canvia el tema': 'Cambiar el tema', 'Canvia d\'exercici': 'Cambiar de ejercicio',
+  'Canvi d\'acord': 'Cambio de acorde', 'Mostra l\'acord': 'Mostrar el acorde', 'Chicken mode': 'Chicken mode',
+  'Canvia l\'idioma': 'Cambiar el idioma', 'Idioma': 'Idioma',
+  'Arpegis': 'Arpegios', 'Mix': 'Mix', 'Acords': 'Acordes',
+  'Aleatoris': 'Aleatorios', 'Els meus patrons': 'Mis patrones', 'Origen dels arpegis': 'Origen de los arpegios',
+  'Graus que poden sortir': 'Grados que pueden salir', 'Notes per arpegi': 'Notas por arpegio',
+  'Menys notes': 'Menos notas', 'Més notes': 'Más notas',
+  'Conjunt de patrons': 'Conjunto de patrones', 'Nom del conjunt': 'Nombre del conjunto', 'Patrons': 'Patrones', 'Nou': 'Nuevo', 'Esborra': 'Borrar',
+  'Separa els patrons amb comes: 13579, 53971, 1357. Per a l\'11 i el 13, separa els graus amb guions: 1-3-11-7.':
+    'Separa los patrones con comas: 13579, 53971, 1357. Para el 11 y el 13, separa los grados con guiones: 1-3-11-7.',
+  'Barrejats': 'Mezclados', 'En ordre': 'En orden',
+  'Quan canvia l\'arpegi': 'Cuándo cambia el arpegio', 'Cada acord': 'Cada acorde', 'Compassos': 'Compases', 'Cada': 'Cada',
+  'Cada quants compassos': 'Cada cuántos compases', 'Menys': 'Menos', 'Més': 'Más',
+  'Arpegi nou també quan canvia l\'acord': 'Arpegio nuevo también cuando cambia el acorde',
+  'A cada volta del bucle': 'En cada vuelta del bucle', 'Arpegis nous': 'Arpegios nuevos', 'Els mateixos': 'Los mismos',
+  'Antelació de l\'arpegi nou (temps)': 'Antelación del arpegio nuevo (tiempos)',
+  'Menys antelació': 'Menos antelación', 'Més antelació': 'Más antelación',
+  'Estil': 'Estilo', 'Swing': 'Swing', 'Bossa': 'Bossa', 'Pop': 'Pop', 'Balada': 'Balada',
+  'Harmonia': 'Armonía', 'Piano': 'Piano', 'Rhodes': 'Rhodes', 'Guitarra': 'Guitarra', 'Synth': 'Synth',
+  'Mesclador': 'Mezclador', 'Baix': 'Bajo', 'Bateria': 'Batería', 'General': 'General',
+  'Complexitat de l\'acompanyament': 'Complejidad del acompañamiento',
+  'Molt simple': 'Muy simple', 'Simple': 'Simple', 'Normal': 'Normal', 'Ric': 'Rico', 'Molt ric': 'Muy rico',
+  'Compte d\'entrada': 'Cuenta de entrada', 'Sense': 'Sin', '1 compàs': '1 compás', '2 compassos': '2 compases',
+  'Sons reals: encara no carregats': 'Sonidos reales: aún no cargados', 'Sons reals carregats': 'Sonidos reales cargados',
+  'No s\'han pogut carregar alguns sons: sonen sintetitzats': 'No se han podido cargar algunos sonidos: suenan sintetizados',
+  'Carregant els sons reals… mentrestant sonen sintetitzats': 'Cargando los sonidos reales… mientras tanto suenan sintetizados',
+  'Els sons reals es carreguen quan prems ▶': 'Los sonidos reales se cargan al pulsar ▶',
+  'Amaga els noms dels acords': 'Ocultar los nombres de los acordes', 'Partitura gran': 'Partitura grande', 'Tanca': 'Cerrar',
+  'Toca des d\'aquí': 'Tocar desde aquí', 'Repeteix': 'Repetir',
+  'Torna a començar': 'Volver al principio', 'Atura': 'Parar', 'Reprodueix': 'Reproducir', 'Pausa': 'Pausa', 'Bucle': 'Bucle',
+  'Sense bucle': 'Sin bucle', 'Bucle de tot l\'exercici': 'Bucle de todo el ejercicio', 'Bucle del tram triat': 'Bucle del tramo elegido',
+  'Agrupament': 'Agrupación', 'Tempo': 'Tempo', 'Més lent': 'Más lento', 'Més ràpid': 'Más rápido',
+  'Arrossega amunt o avall per canviar de 5 en 5': 'Arrastra arriba o abajo para cambiar de 5 en 5',
+  'Els meus exercicis': 'Mis ejercicios', '+ Afegeix': '+ Añadir', 'Cerca': 'Buscar', 'Filtres': 'Filtros',
+  'Cerca per nom, objectiu o tonalitat': 'Buscar por nombre, objetivo o tonalidad',
+  'Cap exercici coincideix amb la cerca.': 'Ningún ejercicio coincide con la búsqueda.',
+  'Encara no tens exercicis. Afegeix-ne un a «+ Afegeix».': 'Aún no tienes ejercicios. Añade uno en «+ Añadir».',
+  'Ara practiques': 'Ahora practicas', 'Edita': 'Editar',
+  'Importa d\'iReal Pro': 'Importar de iReal Pro', 'A iReal Pro, obre la cançó o la llista i toca': 'En iReal Pro, abre la canción o la lista y pulsa',
+  'Comparteix → Exporta → HTML': 'Compartir → Exportar → HTML', '(o copia l\'enllaç).': '(o copia el enlace).',
+  'Tria aquí el fitxer .html o enganxa l\'enllaç': 'Elige aquí el archivo .html o pega el enlace', 'a la caixa.': 'en la caja.',
+  'Fitxer exportat d\'iReal Pro': 'Archivo exportado de iReal Pro', '…o enganxa aquí l\'enllaç irealb://…': '…o pega aquí el enlace irealb://…',
+  'Escriu els acords': 'Escribe los acordes',
+  'Cada | és un compàs; dos acords dins un compàs es reparteixen el temps; % repeteix l\'acord anterior.':
+    'Cada | es un compás; dos acordes en un compás se reparten el tiempo; % repite el acorde anterior.',
+  'Crea l\'exercici a partir del text': 'Crear el ejercicio a partir del texto',
+  'Crea un exercici per cicles': 'Crear un ejercicio por ciclos',
+  'Tipus d\'acord, en l\'ordre que els vols tocar': 'Tipos de acorde, en el orden en que los quieres tocar',
+  'Moviment': 'Movimiento', 'Comença a': 'Empieza en', 'Compassos per acord': 'Compases por acorde', 'Compàs': 'Compás',
+  'Crea l\'exercici': 'Crear el ejercicio',
+  'Edita l\'exercici': 'Editar el ejercicio', 'Cancel·la': 'Cancelar', 'Nom': 'Nombre',
+  'Cada | és un compàs. % repeteix l\'acord anterior. Dos acords dins un compàs es reparteixen el temps.':
+    'Cada | es un compás. % repite el acorde anterior. Dos acordes en un compás se reparten el tiempo.',
+  'Tonalitat': 'Tonalidad', 'Dificultat (cinturó)': 'Dificultad (cinturón)', 'Objectius': 'Objetivos', 'Desa': 'Guardar', 'Desa com a còpia': 'Guardar como copia',
+  'p. ex. C, totes': 'p. ej. C, todas', 'totes': 'todas', 'Sense nom': 'Sin nombre',
+  'separats per comes: extensions, cicle de quartes, dominants alterats': 'separados por comas: extensiones, ciclo de cuartas, dominantes alterados',
+  'Blanc': 'Blanco', 'Groc': 'Amarillo', 'Taronja': 'Naranja', 'Verd': 'Verde', 'Blau': 'Azul', 'Marró': 'Marrón', 'Negre': 'Negro',
+  'Bàsics': 'Básicos',
+  'Cicle de quartes · Δ9, 9, m9': 'Ciclo de cuartas · Δ9, 9, m9',
+  'Cicle de quartes · m7, 7, Δ7 (2 compassos)': 'Ciclo de cuartas · m7, 7, Δ7 (2 compases)',
+  'Menor: ø7, 7alt, mΔ7': 'Menor: ø7, 7alt, mΔ7',
+  'cicle de quartes': 'ciclo de cuartas', 'dominants alterats': 'dominantes alterados', 'extensions': 'extensiones', 'menor': 'menor',
+  'Per quartes': 'Por cuartas', 'Per quintes': 'Por quintas', 'Cromàtic ascendent': 'Cromático ascendente', 'Cromàtic descendent': 'Cromático descendente',
+  'Per tons ascendents': 'Por tonos ascendentes', 'Per tons descendents': 'Por tonos descendentes',
+  'Per terceres menors ascendents': 'Por terceras menores ascendentes', 'Per terceres menors descendents': 'Por terceras menores descendentes',
+  'Per terceres majors ascendents': 'Por terceras mayores ascendentes', 'Per terceres majors descendents': 'Por terceras mayores descendentes',
+  'Per trítons': 'Por tritonos', 'Aleatori (les 12, sense repetir)': 'Aleatorio (las 12, sin repetir)',
+  'Toca un altre cop per esborrar': 'Pulsa otra vez para borrar',
+  'Toca la paperera un altre cop per esborrar l\'exercici.': 'Pulsa la papelera otra vez para borrar el ejercicio.',
+  'No pots esborrar l\'únic exercici.': 'No puedes borrar el único ejercicio.',
+  'És l\'únic': 'Es el único',
+  'No hi trobo cap cançó d\'iReal Pro. Tria el fitxer .html exportat o enganxa l\'enllaç irealb://. Per escriure acords a mà, fes servir «Escriu els acords».':
+    'No encuentro ninguna canción de iReal Pro. Elige el archivo .html exportado o pega el enlace irealb://. Para escribir acordes a mano, usa «Escribe los acordes».',
+  'He trobat un enllaç d\'iReal Pro però no n\'he pogut llegir els acords.': 'He encontrado un enlace de iReal Pro pero no he podido leer sus acordes.',
+  'Això és un enllaç d\'iReal Pro: enganxa\'l a «Importa d\'iReal Pro».': 'Esto es un enlace de iReal Pro: pégalo en «Importar de iReal Pro».',
+  'Escriu almenys un acord.': 'Escribe al menos un acorde.',
+  'Tria almenys un tipus d\'acord.': 'Elige al menos un tipo de acorde.',
+  'JazzDojo · fet per Edu Torné': 'JazzDojo · hecho por Edu Torné',
+};
+
 // Messages with variable parts (replaced anywhere in a text, so joined messages work too)
-const PATTERNS = [
+const PATTERNS_EN = [
   [/Importat amb èxit: «(.+?)»\./g, 'Imported: “$1”.'],
   [/Importades amb èxit (\d+) cançons; obro «(.+?)»\./g, 'Imported $1 songs; opening “$2”.'],
   [/Atenció: no reconec (.+?), i sonaran com a silenci\./g, 'Note: I don\'t recognise $1; they will be silent.'],
@@ -125,10 +207,30 @@ const PATTERNS = [
   [/bateria Virtuosity Drums/g, 'drums Virtuosity Drums'], [/Tipografies Saira i Fira Sans/g, 'Fonts Saira and Fira Sans'],
 ];
 
+const PATTERNS_ES = [
+  [/Importat amb èxit: «(.+?)»\./g, 'Importado: «$1».'],
+  [/Importades amb èxit (\d+) cançons; obro «(.+?)»\./g, 'Importadas $1 canciones; abro «$2».'],
+  [/Atenció: no reconec (.+?), i sonaran com a silenci\./g, 'Atención: no reconozco $1, y sonarán como silencio.'],
+  [/Exercici creat amb èxit \((\d+) acords\)\./g, 'Ejercicio creado ($1 acordes).'],
+  [/Exercici creat amb èxit: «(.+?)»\./g, 'Ejercicio creado: «$1».'],
+  [/No reconec aquests acords: /g, 'No reconozco estos acordes: '],
+  [/^Edita «(.+)»$/g, 'Editar «$1»'], [/^Esborra «(.+)»$/g, 'Borrar «$1»'],
+  [/^Cinturó (.+)$/g, (m, b) => `Cinturón ${(ES[b] || b).toLowerCase()}`],
+  [/^Compàs (\d+\/\d+)$/g, 'Compás $1'],
+  [/\b(\d+) acords\b/g, '$1 acordes'], [/ · en ([A-G][♭♯b#]?m?)$/g, ' · en $1'],
+  [/corxeres/g, 'corcheas'], [/ \(còpia\)/g, ' (copia)'],
+  [/\b(\d+) compassos\b/g, '$1 compases'],
+  [/^Creada per (.+?) · Llicència /g, 'Creada por $1 · Licencia '],
+  [/Sons: contrabaix, piano i Rhodes de MusyngKite; guitarres i baix elèctric de FatBoy/g,
+    'Sonidos: contrabajo, piano y Rhodes de MusyngKite; guitarras y bajo eléctrico de FatBoy'],
+  [/bateria Virtuosity Drums/g, 'batería Virtuosity Drums'], [/Tipografies Saira i Fira Sans/g, 'Tipografías Saira y Fira Sans'],
+];
+let DICT = null, PATTERNS = [];
+
 export function tr(text) {
   const trimmed = text.trim();
   if (!trimmed) return text;
-  const hit = EN[trimmed];
+  const hit = DICT[trimmed];
   if (hit !== undefined) return text.replace(trimmed, hit);
   let out = text;
   for (const [re, rep] of PATTERNS) { re.lastIndex = 0; out = out.replace(re, rep); }
@@ -157,7 +259,8 @@ function translateNode(node) {
 /** Translate the page now and keep translating whatever the app renders later. */
 export function startI18n(lang) {
   document.documentElement.lang = lang;
-  if (lang !== 'en') return;
+  if (lang === 'ca') return;
+  DICT = lang === 'es' ? ES : EN; PATTERNS = lang === 'es' ? PATTERNS_ES : PATTERNS_EN;
   translateNode(document.body);
   new MutationObserver(list => {
     for (const m of list) {
