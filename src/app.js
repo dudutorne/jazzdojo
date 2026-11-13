@@ -45,11 +45,18 @@ if (S.countBars === undefined) { S.countBars = S.countIn === false ? 0 : 1; dele
 const saveS = () => store.set('jd.settings', S);
 
 const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// The exercise that opens by default: Ariel Pierdomenico's chart of all the 9 and ♭9 chords around the cycle of fourths
+const DEFAULT_IREAL = 'irealb://Acordes%209%20Y%20b9%201=Pierdomenico%20Ariel==Tango=C==1r34LbKcu7L9%5EBZ4C%5E9LZL9%5EbDZL9%5EbAZL%5E9bEZL9%5EbBZL9%5EFZGb%5E9L5TA%2A%5BL9bDZZA%5E9LL9bEZL9bBZL9FZ9LCB%2A%5B%209%5EGZL9%5EDZZAb9LL9%5EEZbEZL9ZB9LZL9b7FZL9b7CC%2A%5B%20%5D9GZL9DZL9AZL9EZBb7bL9bGZZL9b7Ab7b97AZL9b7EZL9b7BLZ9b7bGZL9b7bDZLb9LZDZL9b7%2DBZL9%5B%2ADC%2D9%2DbDZL9%2DbAZL9%2DEbZL9%2DbBZL9%2DFZL9LZGb%2D%209b7GDZLhb9LZA%2DEZLhbBZLhFZLhC%2AA%7B%5D%209%2DGZL9%2DDZL9bhLZA%2DEZL95%237bBbhLZBFZL5%237CB%2A%7B%7D%20hGLZhDZLhAZLhEZL%2Ch7%235LZGZLhb7DZL5%235LZA5%237EZL5%237BZL5%23b7GZL5%237bDZL5%237bLZA7%237bEZL%5E%2DbDZ7%235%20%7DAZL9%5E%2DbEZL9%5E%2DbZBL9%5E%2DFZL9%5E%2DCC%2A%5Bb%2D%5E9LGZL5%239LZGb%2D%5E9LZB%2D%5E9LZE%2D%5E9LZA%2D%5E9LZD%2D%5E9LZG%2D%5E9%20%5D%20=Latin%2DBrazil%3A%20Bossa%20Electric=60=1';
+function defaultExercise() {
+  const s = parseIReal(DEFAULT_IREAL)[0];
+  return { ...s, id: 'demo0', title: 'Cicle de quartes · tots els acords de 9 i ♭9', style: 'bossa', level: 'blanc', goals: ['cicle de quartes', 'extensions'], key: 'totes' };
+}
 function seedLibrary() {
   const a = generateCycle(['^9', '9', '-9'], 5, 0, 1);
   const b = generateCycle(['-7', '7', '^7'], 5, 0, 2);
   const c = generateCycle(['h7', '7alt', '-^7'], 5, 0, 2);
   return [
+    defaultExercise(),
     { ...a, id: 'demo1', title: 'Cicle de quartes · Δ9, 9, m9', level: 'blanc', goals: ['cicle de quartes', 'extensions'], key: 'totes' },
     { ...b, id: 'demo2', title: 'Cicle de quartes · m7, 7, Δ7 (2 compassos)', level: 'groc', goals: ['cicle de quartes'], key: 'totes' },
     { ...c, id: 'demo3', title: 'Menor: ø7, 7alt, mΔ7', level: 'blau', goals: ['dominants alterats', 'menor'], key: 'totes' },
@@ -57,6 +64,12 @@ function seedLibrary() {
 }
 let library = store.get('jd.library', null);
 if (!Array.isArray(library) || !library.length) library = seedLibrary();
+// v5: the 9 / ♭9 cycle chart becomes the first exercise and opens by default, also for existing libraries
+if (S.v < 5) {
+  if (!library.some(x => x.id === 'demo0')) library.unshift(defaultExercise());
+  S.songId = 'demo0'; S.v = 5;
+  store.set('jd.library', library);
+}
 const saveLib = () => store.set('jd.library', library);
 
 /* ---------------- runtime state ---------------- */
@@ -90,7 +103,7 @@ const arpAt = k => arps.at(k, chordForSlot);
 function seqCfg() {
   return {
     loop: UI.loop, range: UI.range, change: S.change, every: S.every[S.change] || 1,
-    seconds: S.every.seconds, syncChord: S.syncChord, laps: S.laps,
+    seconds: S.every.seconds, syncChord: true, laps: S.laps, // a new chord always brings a new arpeggio
   };
 }
 function buildSeq() {
@@ -453,8 +466,6 @@ function renderArpPane() {
   if (document.activeElement !== $('patterns')) $('patterns').value = set.text;
   if (document.activeElement !== $('setName')) $('setName').value = set.name;
   $('everyRow').hidden = S.change === 'chord';
-  $('syncRow').hidden = S.change === 'chord';
-  $('syncChord').checked = !!S.syncChord;
   $('everyLbl').textContent = S.change === 'bars' ? 'Cada quants compassos' : '';
   $('everyOut').textContent = S.every[S.change];
   $('leadOut').textContent = String(S.leadBeats).replace('.', ',');
@@ -536,7 +547,6 @@ function stepEvery(dir) {
 }
 $('everyMinus').onclick = () => stepEvery(-1);
 $('everyPlus').onclick = () => stepEvery(1);
-$('syncChord').onchange = e => { S.syncChord = e.target.checked; saveS(); };
 $('leadMinus').onclick = () => { S.leadBeats = Math.max(0, S.leadBeats - 0.5); saveS(); renderArpPane(); };
 $('leadPlus').onclick = () => { S.leadBeats = Math.min(8, S.leadBeats + 0.5); saveS(); renderArpPane(); };
 // pattern sets
@@ -865,6 +875,9 @@ $('editDup').onclick = () => {
   library.unshift(copy); saveLib(); $('editSheet').hidden = true; renderLib();
 };
 $('editClose').onclick = () => { $('editSheet').hidden = true; };
+$('howBtn').onclick = () => { $('howSheet').hidden = false; };
+$('howClose').onclick = () => { $('howSheet').hidden = true; };
+$('howSheet').onclick = e => { if (e.target === $('howSheet')) $('howSheet').hidden = true; };
 $('editSheet').onclick = e => { if (e.target === $('editSheet')) $('editSheet').hidden = true; };
 
 /* ---------------- boot ---------------- */

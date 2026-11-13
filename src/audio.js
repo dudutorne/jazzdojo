@@ -2,7 +2,7 @@
 
 const PAN = { ride: 0.25, bell: 0.25, hhpedal: -0.2, hhclosed: -0.2, hhhalf: -0.2, kick: 0, snare: -0.05, xstick: -0.05 };
 const REL = { bass: 0.05, ebass: 0.06, piano: 0.14, rhodes: 0.12, guitar: 0.1, eguitar: 0.08, synth: 0.18 };
-const GAIN = { bass: 0.9, ebass: 0.85, piano: 0.42, rhodes: 0.5, guitar: 0.45, eguitar: 0.4, synth: 0.5 };
+const GAIN = { bass: 0.78, ebass: 0.72, piano: 0.42, rhodes: 0.5, guitar: 0.45, eguitar: 0.4, synth: 2.6 };
 const BASSES = ['bass', 'ebass'];
 
 export class AudioEngine {

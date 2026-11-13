@@ -17,6 +17,24 @@ export function setLang(v) {
 }
 
 const EN = {
+  'Com funciona?': 'How it works',
+  'Practica arpegis sobre una progressió d\'acords sense veure els acords: només els graus que has de tocar.':
+    'Practise arpeggios over a chord progression without seeing the chords: only the degrees you have to play.',
+  'Tria un exercici a «Exercicis». També en pots importar d\'iReal Pro, escriure els acords o crear-ne per cicles.':
+    'Pick an exercise in “Exercises”. You can also import one from iReal Pro, type the chords or build one from cycles.',
+  'Prem ▶. Després del compte d\'entrada sona la banda: baix, bateria i harmonia.':
+    'Press ▶. After the count-in the band plays: bass, drums and harmony.',
+  'Toca els graus que surten a la pantalla, per exemple 5 3 9 7 1, sobre l\'acord que sona. El número vermell és la primera nota.':
+    'Play the degrees shown on screen, for example 5 3 9 7 1, over the chord that is sounding. The red number is the first note.',
+  'Si et perds, prem «Mostra l\'acord». Amb el Chicken mode també hi veus les notes.':
+    'If you get lost, press “Show chord”. With Chicken mode you also see the notes.',
+  'A Arpegis tries quins graus surten i quan canvien. A Mix, l\'estil, els instruments, el volum i el compte d\'entrada.':
+    'In Arpeggios you choose which degrees appear and when they change. In Mix, the style, instruments, volume and count-in.',
+  'A Acords tens la partitura: toca un acord i el botó ▶ que hi apareix per començar des d\'allà, o mantén-lo premut i arrossega per fer un bucle.':
+    'Chords shows the chart: tap a chord and the ▶ button that appears to start from there, or press and hold it and drag to make a loop.',
+  'Tecles: espai per tocar o fer pausa, A per mostrar l\'acord, Esc per aturar, fletxes amunt i avall per canviar el tempo.':
+    'Keys: space to play or pause, A to show the chord, Esc to stop, up and down arrows to change the tempo.',
+  'Cicle de quartes · tots els acords de 9 i ♭9': 'Cycle of fourths · all the 9 and ♭9 chords',
   // top bar, stage
   'Exercicis': 'Exercises', 'Canvia el tema': 'Change theme', 'Canvia d\'exercici': 'Change exercise',
   'Canvi d\'acord': 'Chord change', 'Mostra l\'acord': 'Show chord', 'Chicken mode': 'Chicken mode',
@@ -107,6 +125,24 @@ const EN = {
 };
 
 const ES = {
+  'Com funciona?': '¿Cómo funciona?',
+  'Practica arpegis sobre una progressió d\'acords sense veure els acords: només els graus que has de tocar.':
+    'Practica arpegios sobre una progresión de acordes sin ver los acordes: solo los grados que tienes que tocar.',
+  'Tria un exercici a «Exercicis». També en pots importar d\'iReal Pro, escriure els acords o crear-ne per cicles.':
+    'Elige un ejercicio en «Ejercicios». También puedes importarlos de iReal Pro, escribir los acordes o crearlos por ciclos.',
+  'Prem ▶. Després del compte d\'entrada sona la banda: baix, bateria i harmonia.':
+    'Pulsa ▶. Después de la cuenta de entrada suena la banda: bajo, batería y armonía.',
+  'Toca els graus que surten a la pantalla, per exemple 5 3 9 7 1, sobre l\'acord que sona. El número vermell és la primera nota.':
+    'Toca los grados que salen en la pantalla, por ejemplo 5 3 9 7 1, sobre el acorde que suena. El número rojo es la primera nota.',
+  'Si et perds, prem «Mostra l\'acord». Amb el Chicken mode també hi veus les notes.':
+    'Si te pierdes, pulsa «Mostrar el acorde». Con el Chicken mode también ves las notas.',
+  'A Arpegis tries quins graus surten i quan canvien. A Mix, l\'estil, els instruments, el volum i el compte d\'entrada.':
+    'En Arpegios eliges qué grados salen y cuándo cambian. En Mix, el estilo, los instrumentos, el volumen y la cuenta de entrada.',
+  'A Acords tens la partitura: toca un acord i el botó ▶ que hi apareix per començar des d\'allà, o mantén-lo premut i arrossega per fer un bucle.':
+    'En Acordes tienes la partitura: toca un acorde y el botón ▶ que aparece para empezar desde ahí, o mantenlo pulsado y arrastra para hacer un bucle.',
+  'Tecles: espai per tocar o fer pausa, A per mostrar l\'acord, Esc per aturar, fletxes amunt i avall per canviar el tempo.':
+    'Teclas: espacio para tocar o pausar, A para mostrar el acorde, Esc para parar, flechas arriba y abajo para cambiar el tempo.',
+  'Cicle de quartes · tots els acords de 9 i ♭9': 'Ciclo de cuartas · todos los acordes de 9 y ♭9',
   'Exercicis': 'Ejercicios', 'Canvia el tema': 'Cambiar el tema', 'Canvia d\'exercici': 'Cambiar de ejercicio',
   'Canvi d\'acord': 'Cambio de acorde', 'Mostra l\'acord': 'Mostrar el acorde', 'Chicken mode': 'Chicken mode',
   'Canvia l\'idioma': 'Cambiar el idioma', 'Idioma': 'Idioma',

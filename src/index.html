@@ -56,6 +56,14 @@ svg.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stro
 .langmenu button:hover{background:color-mix(in srgb, var(--ink) 6%, transparent)}
 .langmenu button[aria-checked="true"]::after{content:"✓";color:var(--accent)}
 .top .pill.round{flex:none}
+.howbtn{flex:none;width:42px;height:42px;padding:0;justify-content:center}
+.howbtn .howtxt{display:none}
+@media (min-width:760px){ .howbtn{width:auto;padding:0 14px 0 11px} .howbtn .howtxt{display:inline} }
+.sheet.how{max-width:560px}
+.howlead{margin:0 0 6px;font-size:17px;line-height:1.45}
+.howsteps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;line-height:1.45}
+.howsteps li::marker{color:var(--accent);font-weight:700}
+.howkeys{margin:6px 0 0;font-size:14px;color:var(--muted)}
 @media (max-width:420px){ .brand .word{display:none} }
 
 .layout{max-width:1200px;margin:0 auto;display:grid;gap:16px;grid-template-columns:1fr}
@@ -307,6 +315,7 @@ ol.steps{margin:0;padding-left:20px;font-size:14px;color:var(--muted)}
   <div class="brand" id="brand" aria-label="JazzDojo">{{svg:enso}}{{svg:wordmark}}</div>
   <span class="grow"></span>
   <button class="pill" id="libBtn"><svg class="ico" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Exercicis</button>
+  <button class="pill howbtn" id="howBtn" aria-label="Com funciona?" title="Com funciona?"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.9v.2"/></svg><span class="howtxt">Com funciona?</span></button>
   <div class="langwrap"><button class="pill round" id="langBtn" aria-label="Canvia l'idioma" aria-haspopup="menu" aria-expanded="false"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5h10M8 3v2M5.5 5c.8 3.3 3 6 6.5 7.5M10.5 5c-.8 3.6-3.4 6.8-7.5 8.5M12.5 21l4.5-10 4.5 10M14 17.5h6"/></svg></button>
     <div class="langmenu" id="langMenu" role="menu" hidden></div></div>
   <button class="pill round" id="themeBtn" aria-label="Canvia el tema"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
@@ -356,7 +365,6 @@ ol.steps{margin:0;padding-left:20px;font-size:14px;color:var(--muted)}
         <div class="seg" id="changeSeg"><button data-v="chord">Cada acord</button><button data-v="bars">Compassos</button></div>
         <div class="row" id="everyRow" hidden><span class="hint grow" id="everyLbl">Cada</span>
           <div class="stepper"><button id="everyMinus" aria-label="Menys">−</button><output id="everyOut">2</output><button id="everyPlus" aria-label="Més">+</button></div></div>
-        <label class="switch" id="syncRow" hidden><span>Arpegi nou també quan canvia l'acord</span><input type="checkbox" id="syncChord"></label>
       </div>
       <div class="field"><div class="lbl">A cada volta del bucle</div>
         <div class="seg" id="lapsSeg"><button data-v="new">Arpegis nous</button><button data-v="repeat">Els mateixos</button></div></div>
@@ -468,6 +476,21 @@ ol.steps{margin:0;padding-left:20px;font-size:14px;color:var(--muted)}
   </div>
 </div>
 
+<div class="scrim" id="howSheet" hidden>
+  <div class="sheet how" role="dialog" aria-modal="true" aria-labelledby="howTitle">
+    <div class="sheethead"><h2 id="howTitle">Com funciona?</h2><button class="secondary" id="howClose">Tanca</button></div>
+    <p class="howlead">Practica arpegis sobre una progressió d'acords sense veure els acords: només els graus que has de tocar.</p>
+    <ol class="howsteps">
+      <li>Tria un exercici a «Exercicis». També en pots importar d'iReal Pro, escriure els acords o crear-ne per cicles.</li>
+      <li>Prem ▶. Després del compte d'entrada sona la banda: baix, bateria i harmonia.</li>
+      <li>Toca els graus que surten a la pantalla, per exemple 5 3 9 7 1, sobre l'acord que sona. El número vermell és la primera nota.</li>
+      <li>Si et perds, prem «Mostra l'acord». Amb el Chicken mode també hi veus les notes.</li>
+      <li>A Arpegis tries quins graus surten i quan canvien. A Mix, l'estil, els instruments, el volum i el compte d'entrada.</li>
+      <li>A Acords tens la partitura: toca un acord i el botó ▶ que hi apareix per començar des d'allà, o mantén-lo premut i arrossega per fer un bucle.</li>
+    </ol>
+    <p class="howkeys">Tecles: espai per tocar o fer pausa, A per mostrar l'acord, Esc per aturar, fletxes amunt i avall per canviar el tempo.</p>
+  </div>
+</div>
 <div class="scrim" id="editSheet" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
     <div class="sheethead"><h2 id="editTitle">Edita l'exercici</h2><button class="secondary" id="editClose">Cancel·la</button></div>
