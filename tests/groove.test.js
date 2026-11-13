@@ -120,7 +120,7 @@ test('harmony sometimes anticipates the next chord by an eighth, and then skips 
 });
 
 const ALLM = [{ num: 4, den: 4 }, ...MET];
-test('chromatic bass notes are never longer than an eighth (all styles, meters and complexities)', () => {
+test('chromatic bass notes only at the top of the fader, and never longer than an eighth', () => {
   let chromatic = 0;
   for (const m of ALLM) for (const style of ['swing', 'bossa', 'even', 'ballad']) for (const cx of [0, 0.5, 1]) for (const seed of [3, 9]) {
     const notes = render(style, 'piano', m, 1, seed, cx).filter(n => n.kind === 'bass');
@@ -132,10 +132,26 @@ test('chromatic bass notes are never longer than an eighth (all styles, meters a
       if (!nx || n.b.nextEv.label === n.b.ev.label) continue;
       const tgt = nx.bass ?? nx.root, d = ((n.midi - tgt) % 12 + 12) % 12;
       const isChrom = (d === 1 || d === 11) && !pcsOf(n.b.ev.chord).includes(n.midi % 12);
-      if (isChrom) { chromatic++; assert.ok(n.dur <= eighth * 1.02, `${style} ${m.num}/${m.den} cx${cx}: chromatic ${n.midi} lasts ${n.dur.toFixed(3)}s`); }
+      if (isChrom) { if (cx < 1) chromatic++; assert.ok(n.dur <= eighth * 1.02, `${style} ${m.num}/${m.den} cx${cx}: chromatic ${n.midi} lasts ${n.dur.toFixed(3)}s`); }
     }
   }
-  assert.equal(chromatic, 0, 'the bass should make no chromatic approaches');
+  assert.equal(chromatic, 0, 'below the top of the fader the bass makes no chromatic approaches');
+});
+test('at the top of the fader the walking bass plays eighths, some of them chromatic approaches', () => {
+  let eighths = 0, chrom = 0;
+  for (const seed of [1, 2, 3, 4]) {
+    const notes = render('swing', 'piano', { num: 4, den: 4 }, 1, seed, 1).filter(n => n.kind === 'bass');
+    for (const n of notes) {
+      if (Math.abs(((n.t - n.b.t) / 0.5) - 0.62) < 0.08 && !n.ghost) eighths++;
+      const nx = n.b.nextEv && n.b.nextEv.chord;
+      if (nx && n.b.nextEv.label !== n.b.ev.label) {
+        const d = ((n.midi - (nx.bass ?? nx.root)) % 12 + 12) % 12;
+        if ((d === 1 || d === 11) && !Object.values(n.b.ev.chord.iv).map(i => (n.b.ev.chord.root + i) % 12).includes(n.midi % 12)) chrom++;
+      }
+    }
+  }
+  assert.ok(eighths >= 6, `only ${eighths} sounding eighths`);
+  assert.ok(chrom >= 2, `only ${chrom} chromatic approaches`);
 });
 test('swing bass sometimes plays a swung pair of eighths', () => {
   const notes = render('swing', 'piano', { num: 4, den: 4 }, 1, 5, 0.8).filter(n => n.kind === 'bass');
@@ -215,7 +231,7 @@ test('pop: plain triads/7ths with the root, at every complexity, for piano, synt
     }
   }
   const busy = cx => render('even', 'guitar', { num: 4, den: 4 }, 1, 3, cx).filter(x => x.kind === 'chord').length;
-  assert.ok(busy(0) < busy(0.3) && busy(0.3) < busy(1)); // the harmony runs a little ahead of the fader
+  assert.ok(busy(0) < busy(1)); // the harmony runs ahead of the fader, so its simplest tier is out of reach
 });
 
 test('ending: one hit of the chord, everything at the same moment', () => {
