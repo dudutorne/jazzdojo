@@ -1,6 +1,7 @@
 // Web Audio engine: sample playback (with synthesized fallback while samples load), buses, mixer, reverb.
 
-const PAN = { ride: 0.25, bell: 0.25, hhpedal: -0.2, hhclosed: -0.2, hhhalf: -0.2, kick: 0, snare: -0.05, xstick: -0.05 };
+const PAN = { ride: 0.25, bell: 0.25, hhpedal: -0.2, hhclosed: -0.2, hhhalf: -0.2, kick: 0, snare: -0.05, xstick: -0.05, crash: -0.3 };
+const REVERB = 0.05; // wet level relative to the dry sound (5%)
 const REL = { bass: 0.05, ebass: 0.06, piano: 0.14, rhodes: 0.12, guitar: 0.1, eguitar: 0.08, synth: 0.18 };
 const GAIN = { bass: 0.7, ebass: 0.65, piano: 0.42, rhodes: 0.5, guitar: 0.45, eguitar: 0.4, synth: 2.6 };
 const BASSES = ['bass', 'ebass'];
@@ -25,11 +26,25 @@ export class AudioEngine {
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -12; comp.ratio.value = 3; comp.attack.value = 0.005; comp.release.value = 0.15;
     this.master.connect(comp); comp.connect(ctx.destination);
-    // small room reverb
-    const len = Math.floor(ctx.sampleRate * 1.4), ir = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.5); }
-    this.verb = ctx.createConvolver(); this.verb.buffer = ir;
-    this.verbIn = ctx.createGain(); this.verbIn.gain.value = 0.16;
+    // room reverb: a few early reflections, then a diffuse tail that gets darker as it decays (about 1.2 s).
+    // The impulse response has unit energy, so the send gain is the wet level relative to the dry sound.
+    const sr = ctx.sampleRate, len = Math.floor(sr * 1.7), ir = ctx.createBuffer(2, len, sr);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c), pre = Math.floor(sr * 0.012);
+      let lp = 0, e = 0;
+      for (let i = pre; i < len; i++) {
+        const t = (i - pre) / sr;
+        const k = 0.55 + 0.4 * Math.min(1, t / 0.9);            // one-pole low-pass that closes with time
+        lp = lp * k + (Math.random() * 2 - 1) * (1 - k);
+        d[i] = lp * Math.exp(-5.8 * t) * Math.min(1, t / 0.02);
+      }
+      for (const [ms, g] of c ? [[9, 0.5], [17, -0.38], [29, 0.3], [41, 0.22]] : [[7, 0.5], [19, 0.36], [25, -0.3], [37, 0.24]]) d[Math.floor(sr * ms / 1000)] += g * 0.05;
+      for (let i = 0; i < len; i++) e += d[i] * d[i];
+      const n = 1 / Math.sqrt(e);
+      for (let i = 0; i < len; i++) d[i] *= n;
+    }
+    this.verb = ctx.createConvolver(); this.verb.normalize = false; this.verb.buffer = ir;
+    this.verbIn = ctx.createGain(); this.verbIn.gain.value = REVERB;
     this.verbIn.connect(this.verb); this.verb.connect(this.master);
     const nb = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), nd = nb.getChannelData(0);
     for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -74,10 +89,23 @@ export class AudioEngine {
         }));
         this.sets.drums = set;
       } else {
-        const got = await Promise.allSettled(man[inst].map(async m => ({ midi: m, ...(await this.decode(`${this.base}${inst}/${m}.mp3`)) })));
+        // either a plain list of notes (one file each), or { dir, notes, layers: [{ id, rr, below }], gain }:
+        // loudness layers (picked by velocity, `below` is the upper limit) with `rr` alternating takes of each note
+        const spec = man[inst], jobs = [];
+        if (Array.isArray(spec)) for (const m of spec) jobs.push({ midi: m, li: 0, url: `${this.base}${inst}/${m}.mp3` });
+        else spec.layers.forEach((l, li) => { for (const m of spec.notes) for (let k = 1; k <= (l.rr || 1); k++) jobs.push({ midi: m, li, url: `${this.base}${spec.dir}/${m}${l.id}${k}.mp3` }); });
+        const got = await Promise.allSettled(jobs.map(async j => ({ midi: j.midi, li: j.li, ...(await this.decode(j.url)) })));
         const list = got.filter(g => g.status === 'fulfilled').map(g => g.value);
         if (!list.length) throw new Error('no samples for ' + inst);
+        list.layers = Array.isArray(spec) ? null : spec.layers;
+        list.gain = Array.isArray(spec) ? 1 : (spec.gain || 1);
+        list.turn = 0;
         this.sets[inst] = list;
+        if (inst === 'bass' && man.bassghost) { // muted-string noises for ghost notes
+          const gg = await Promise.allSettled(man.bassghost.files.map(f => this.decode(`${this.base}${man.bassghost.dir}/${f}.mp3`)));
+          const ok = gg.filter(g => g.status === 'fulfilled').map(g => g.value);
+          if (ok.length) this.sets.bassghost = ok;
+        }
       }
       this.onStatus(inst, 'ready');
       return true;
@@ -136,20 +164,34 @@ export class AudioEngine {
     if (n.kind === 'bass') { const b = n.inst || 'bass'; return n.ghost ? this.ghost(b, n.midi, n.t, n.v) : this.melodic(b, n.midi, n.t, n.dur, n.v, this.bus.bass); }
     if (n.kind === 'chord') {
       const k = 1 / Math.sqrt(n.midis.length);
-      n.midis.forEach((m, i) => this.melodic(n.inst, m, n.t + i * (n.roll || 0), n.dur, n.v * k * 1.6, this.bus.comp));
+      // a stab ("acord sec") is cut short: a much faster release than a normal chord
+      n.midis.forEach((m, i) => this.melodic(n.inst, m, n.t + i * (n.roll || 0), n.dur, n.v * k * 1.6, this.bus.comp, n.stab ? 0.035 : 0));
     }
   }
-  melodic(inst, midi, t, dur, v, dest) {
+  /** The sample for a note: the loudness layer for this velocity, the nearest sampled pitch, the next take in turn. */
+  pickSample(set, midi, v) {
+    let pool = set;
+    if (set.layers) {
+      let li = set.layers.findIndex(l => l.below === undefined || v < l.below);
+      if (li < 0) li = set.layers.length - 1;
+      const inLayer = set.filter(x => x.li === li);
+      if (inLayer.length) pool = inLayer;
+    }
+    let best = pool[0];
+    for (const x of pool) if (Math.abs(x.midi - midi) < Math.abs(best.midi - midi)) best = x;
+    const takes = pool.filter(x => x.midi === best.midi);
+    return takes[set.turn++ % takes.length];
+  }
+  melodic(inst, midi, t, dur, v, dest, rel = 0) {
     if (inst === 'synth') return this.polySynth(midi, t, dur, v, dest);
     const set = this.sets[inst];
     if (!set) return this.synth(BASSES.includes(inst) ? 'bass' : inst, midi, t, dur, v, dest);
-    let s = set[0];
-    for (const x of set) if (Math.abs(x.midi - midi) < Math.abs(s.midi - midi)) s = x;
+    const s = this.pickSample(set, midi, v);
     const rate = Math.pow(2, (midi - s.midi) / 12);
-    const gain = Math.pow(Math.max(0.05, v), 1.4) * GAIN[inst];
+    const gain = Math.pow(Math.max(0.05, v), 1.4) * GAIN[inst] * (set.gain || 1);
     // guitar: a soft low-pass keeps it round and warm, like a hollow-body with the tone knob rolled back
     const cutoff = { piano: 1600 + v * 7000, rhodes: 1600 + v * 7000, bass: 900 + v * 1800, ebass: 2400 + v * 3000, guitar: 1500 + v * 1700, eguitar: 2600 + v * 4000 }[inst] || 0;
-    this.sample(s, t, rate, gain, dest, { dur, rel: REL[inst], pan: BASSES.includes(inst) ? 0 : inst === 'eguitar' ? -0.18 : 0.12, cutoff });
+    this.sample(s, t, rate, gain, dest, { dur, rel: rel || REL[inst], pan: BASSES.includes(inst) ? 0 : inst === 'eguitar' ? -0.18 : 0.12, cutoff });
   }
   /** Pop polysynth: two detuned saws and a square an octave down, through a low-pass that closes after the attack. */
   polySynth(midi, t, dur, v, dest) {
@@ -172,11 +214,17 @@ export class AudioEngine {
   }
   /** Bass ghost note: the string muted by the fretting hand — a short, dark thump with barely any pitch. */
   ghost(inst, midi, t, v) {
+    const gs = inst === 'bass' && this.sets.bassghost;
+    if (gs) { // a real muted pluck: all noise, no pitch; never the same take twice in a row
+      let i = Math.floor(Math.random() * gs.length);
+      if (i === this.lastGhost) i = (i + 1) % gs.length;
+      this.lastGhost = i;
+      return this.sample(gs[i], t, 0.94 + Math.random() * 0.12, Math.pow(v, 1.2) * 0.5, this.bus.bass, { cutoff: 1500 });
+    }
     const set = this.sets[inst] || this.sets.bass;
     if (!set) return this.synth('bass', midi, t, 0.05, v * 0.4, this.bus.bass);
-    let s = set[0];
-    for (const x of set) if (Math.abs(x.midi - midi) < Math.abs(s.midi - midi)) s = x;
-    this.sample(s, t, Math.pow(2, (midi - s.midi) / 12), Math.pow(v, 1.4) * GAIN.bass * 0.55, this.bus.bass, { dur: 0.045, rel: 0.015, cutoff: 380 });
+    const s = this.pickSample(set, midi, v);
+    this.sample(s, t, Math.pow(2, (midi - s.midi) / 12), Math.pow(v, 1.4) * GAIN.bass * 0.3, this.bus.bass, { dur: 0.03, rel: 0.012, cutoff: 300 });
     // a touch of finger noise
     const src = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter(), g = this.ctx.createGain();
     src.buffer = this.noise; f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 1.2;
@@ -190,9 +238,12 @@ export class AudioEngine {
     let idx;
     if (name === 'ride') idx = (v < 0.45 ? 0 : v < 0.72 ? 1 : 2) * 2 + (Math.random() < 0.5 ? 0 : 1);
     else if (name === 'hhpedal' || name === 'hhclosed') idx = (v < 0.6 ? 0 : 1) * 2 + (Math.random() < 0.5 ? 0 : 1);
+    else if (name === 'crash') idx = Math.floor(Math.random() * layers);
+    // snare with many takes: four loudness steps, and a different neighbouring take every time
+    else if (name === 'snare' && layers >= 8) { const per = Math.floor(layers / 4); idx = Math.min(3, Math.floor(v * 4)) * per + Math.floor(Math.random() * per); }
     else idx = Math.min(layers - 1, Math.floor(v * layers));
     const s = set[Math.min(idx, layers - 1)];
-    this.sample(s, t, 1, 0.35 + 0.75 * v, this.bus.drums, { pan: PAN[name] || 0 });
+    this.sample(s, t, 1, name === 'crash' ? 0.1 + 0.5 * v : 0.35 + 0.75 * v, this.bus.drums, { pan: PAN[name] || 0 });
   }
   /** Count-in click. level 2 = bar start, 1 = start of a group (odd meters), 0 = other beats. */
   click(t, level) {
@@ -224,6 +275,7 @@ export class AudioEngine {
       s.start(t, Math.random() * 0.5); s.stop(t + decay + 0.05);
     };
     if (name === 'ride' || name === 'bell') noise(5200, 0, 0.14 * v, 0.4);
+    else if (name === 'crash') noise(3800, 0, 0.12 * v, 1.3);
     else if (name.startsWith('hh')) noise(7500, 0, 0.2 * v, 0.05);
     else if (name === 'snare') noise(0, 1900, 0.4 * v, 0.15);
     else if (name === 'xstick') noise(0, 2600, 0.5 * v, 0.035);

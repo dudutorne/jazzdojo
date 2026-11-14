@@ -59,7 +59,7 @@ const EN = {
   'Harmonia': 'Harmony', 'Piano': 'Piano', 'Rhodes': 'Rhodes', 'Guitarra': 'Guitar', 'Synth': 'Synth',
   'Mesclador': 'Mixer', 'Baix': 'Bass', 'Bateria': 'Drums', 'General': 'Master',
   'Complexitat de l\'acompanyament': 'Accompaniment complexity',
-  'Molt simple': 'Very simple', 'Simple': 'Simple', 'Normal': 'Normal', 'Ric': 'Rich', 'Molt ric': 'Very rich',
+  'Simple': 'Simple', 'Normal': 'Normal', 'Difícil': 'Hard',
   'Compte d\'entrada': 'Count-in', 'Sense': 'None', '1 compàs': '1 bar', '2 compassos': '2 bars',
   'Sons reals: encara no carregats': 'Real sounds: not loaded yet', 'Sons reals carregats': 'Real sounds loaded',
   'No s\'han pogut carregar alguns sons: sonen sintetitzats': 'Some sounds could not be loaded: using synthesized sounds',
@@ -164,7 +164,7 @@ const ES = {
   'Harmonia': 'Armonía', 'Piano': 'Piano', 'Rhodes': 'Rhodes', 'Guitarra': 'Guitarra', 'Synth': 'Synth',
   'Mesclador': 'Mezclador', 'Baix': 'Bajo', 'Bateria': 'Batería', 'General': 'General',
   'Complexitat de l\'acompanyament': 'Complejidad del acompañamiento',
-  'Molt simple': 'Muy simple', 'Simple': 'Simple', 'Normal': 'Normal', 'Ric': 'Rico', 'Molt ric': 'Muy rico',
+  'Simple': 'Simple', 'Normal': 'Normal', 'Difícil': 'Difícil',
   'Compte d\'entrada': 'Cuenta de entrada', 'Sense': 'Sin', '1 compàs': '1 compás', '2 compassos': '2 compases',
   'Sons reals: encara no carregats': 'Sonidos reales: aún no cargados', 'Sons reals carregats': 'Sonidos reales cargados',
   'No s\'han pogut carregar alguns sons: sonen sintetitzats': 'No se han podido cargar algunos sonidos: suenan sintetizados',
@@ -238,8 +238,8 @@ const PATTERNS_EN = [
   [/corxeres/g, 'eighths'], [/ \(còpia\)/g, ' (copy)'],
   [/\b(\d+) compassos\b/g, '$1 bars'],
   [/^Creada per (.+?) · Llicència /g, 'Created by $1 · Licence '],
-  [/Sons: contrabaix, piano i Rhodes de MusyngKite; guitarres i baix elèctric de FatBoy/g,
-    'Sounds: double bass, piano and Rhodes from MusyngKite; guitars and electric bass from FatBoy'],
+  [/Sons: contrabaix de D\. Smolken \(CC0\); piano Salamander Grand Piano d'Alexander Holm \(CC BY 3\.0\); Rhodes de MusyngKite, guitarres i baix elèctric de FatBoy/g,
+    'Sounds: double bass by D. Smolken (CC0); Salamander Grand Piano by Alexander Holm (CC BY 3.0); Rhodes from MusyngKite, guitars and electric bass from FatBoy'],
   [/bateria Virtuosity Drums/g, 'drums Virtuosity Drums'], [/Tipografies Saira i Fira Sans/g, 'Fonts Saira and Fira Sans'],
 ];
 
@@ -257,8 +257,8 @@ const PATTERNS_ES = [
   [/corxeres/g, 'corcheas'], [/ \(còpia\)/g, ' (copia)'],
   [/\b(\d+) compassos\b/g, '$1 compases'],
   [/^Creada per (.+?) · Llicència /g, 'Creada por $1 · Licencia '],
-  [/Sons: contrabaix, piano i Rhodes de MusyngKite; guitarres i baix elèctric de FatBoy/g,
-    'Sonidos: contrabajo, piano y Rhodes de MusyngKite; guitarras y bajo eléctrico de FatBoy'],
+  [/Sons: contrabaix de D\. Smolken \(CC0\); piano Salamander Grand Piano d'Alexander Holm \(CC BY 3\.0\); Rhodes de MusyngKite, guitarres i baix elèctric de FatBoy/g,
+    'Sonidos: contrabajo de D. Smolken (CC0); piano Salamander Grand Piano de Alexander Holm (CC BY 3.0); Rhodes de MusyngKite, guitarras y bajo eléctrico de FatBoy'],
   [/bateria Virtuosity Drums/g, 'batería Virtuosity Drums'], [/Tipografies Saira i Fira Sans/g, 'Tipografías Saira y Fira Sans'],
 ];
 let DICT = null, PATTERNS = [];

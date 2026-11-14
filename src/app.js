@@ -81,6 +81,9 @@ if (S.v < 7) {
 }
 // v8: the complexity fader starts in the middle ("Normal") again
 if (S.v < 8) { S.complexity = 0.5; S.v = 8; }
+// v9: three levels instead of a fader: Simple, Normal, Difícil
+if (S.v < 9) { S.v = 9; }
+S.complexity = S.complexity < 0.35 ? 0.2 : S.complexity <= 0.7 ? 0.5 : 1;
 const saveLib = () => store.set('jd.library', library);
 
 /* ---------------- runtime state ---------------- */
@@ -488,8 +491,7 @@ function renderSoPane() {
   $('harmSeg').innerHTML = opts.map(([v, l]) => `<button data-v="${v}">${l}</button>`).join('');
   setSeg('harmSeg', harmonyFamily());
   setSeg('countSeg', String(S.countBars));
-  $('cxRange').value = Math.round(S.complexity * 100);
-  $('cxOut').textContent = cxLabel(S.complexity);
+  setSeg('cxSeg', String(S.complexity));
   const names = { bass: 'Baix', drums: 'Bateria', comp: 'Harmonia', master: 'General' };
   $('mixer').innerHTML = Object.keys(names).map(k => `<div class="mix"><label for="v-${k}">${names[k]}</label><input type="range" id="v-${k}" data-k="${k}" min="0" max="100" value="${Math.round(S.vol[k] * 100)}"><output id="o-${k}">${Math.round(S.vol[k] * 100)}</output></div>`).join('');
   renderSoundStatus();
@@ -577,8 +579,7 @@ $('patterns').oninput = e => { curSet().text = e.target.value; saveS(); clearTim
 $('styleSeg').onclick = e => { const v = segVal(e); if (!v) return; prefs().style = v; saveS(); renderSoPane(); renderHead(); if (audio.ctx) ensureSamples(); };
 $('harmSeg').onclick = e => { const v = segVal(e); if (!v) return; if (isPop()) S.harmonyPop = v; else S.harmony = v; saveS(); setSeg('harmSeg', v); if (audio.ctx) ensureSamples(); renderSoundStatus(); };
 $('countSeg').onclick = e => { const v = segVal(e); if (v == null) return; S.countBars = +v; saveS(); setSeg('countSeg', v); };
-function cxLabel(c) { return c < 0.2 ? 'Molt simple' : c < 0.4 ? 'Simple' : c <= 0.6 ? 'Normal' : c <= 0.8 ? 'Ric' : 'Molt ric'; }
-$('cxRange').oninput = e => { S.complexity = e.target.value / 100; $('cxOut').textContent = cxLabel(S.complexity); saveS(); };
+$('cxSeg').onclick = e => { const v = segVal(e); if (v == null) return; S.complexity = +v; saveS(); setSeg('cxSeg', v); };
 $('mixer').oninput = e => { const k = e.target.dataset.k; if (!k) return; S.vol[k] = e.target.value / 100; $('o-' + k).textContent = e.target.value; audio.setVolumes(S.vol); saveS(); };
 audio.setVolumes(S.vol);
 // structure
