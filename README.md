@@ -61,14 +61,17 @@ Creada per **Edu Torné**. Llicència [CC BY-NC-SA 4.0](https://creativecommons.
     6/8 (accents a l'1 i a la segona corxera del 2).
 - **Complexitat de l'acompanyament** (pestanya Mix): tres nivells. **Simple:** el baix fa notes llargues, poc comping i
   poca bateria. **Normal** (per defecte): el baix camina a negres (o fa el patró de bossa, etc.) amb alguna nota
-  fantasma. **Difícil:** més corxeres al baix, més cops de l'harmonia, més caixa i més anticipacions. El ride sempre
+  fantasma. **Alta:** més corxeres al baix, més cops de l'harmonia, més caixa i més anticipacions. El ride sempre
   manté un pols estable.
 - **Baix:** evita repetir la mateixa nota dues vegades seguides. Les notes fantasma són soroll de corda apagada, sense
-  to definit, i només cauen a la corxera del temps feble. Els cromatismes només surten al nivell Difícil, sempre en
+  to definit, i només cauen a la corxera del temps feble. Els cromatismes només surten al nivell Alta, sempre en
   corxeres i de pas: la nota cromàtica queda a un semitò real de la nota on resol, mai amb un salt d'octava pel mig.
 - **Harmonia:** els voicings són inversions tancades i drop 2, sense novenes menors entre veus. Quan un acord dura, es
   desplega cap amunt o cap avall amb passos petits en lloc de repetir la mateixa posició, i de tant en tant fa un
   acord sec (curt).
+- **Bateria:** va un pas per sobre del nivell: a Normal toca el groove més ric, i a Alta afegeix notes fantasma en
+  tresets, redobles més llargs i diàlegs entre caixa i bombo.
+- **Harmonia per estil:** en canviar d'estil, la bossa passa a guitarra i el pop, el swing i la balada a piano.
 - **Bateria i sala:** caixa ocasional amb dotze mostres de dinàmiques diferents, algun crash suau a l'inici de frase o
   després d'un redoble, i un 5% de reverberació a l'harmonia i la bateria.
 - **Agrupaments i accents:** en els compassos de x/4 escrits en corxeres, els grups de 2 consecutius es noten com a
