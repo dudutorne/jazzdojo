@@ -120,7 +120,7 @@ test('harmony sometimes anticipates the next chord by an eighth, and then skips 
 });
 
 const ALLM = [{ num: 4, den: 4 }, ...MET];
-test('chromatic bass notes only at the top of the fader, and never longer than an eighth', () => {
+test('chromatic bass notes only at the Difícil level, and never longer than an eighth', () => {
   let chromatic = 0;
   for (const m of ALLM) for (const style of ['swing', 'bossa', 'even', 'ballad']) for (const cx of [0, 0.5, 1]) for (const seed of [3, 9]) {
     const notes = render(style, 'piano', m, 1, seed, cx).filter(n => n.kind === 'bass');
@@ -135,9 +135,9 @@ test('chromatic bass notes only at the top of the fader, and never longer than a
       if (isChrom) { if (cx < 1) chromatic++; assert.ok(n.dur <= eighth * 1.02, `${style} ${m.num}/${m.den} cx${cx}: chromatic ${n.midi} lasts ${n.dur.toFixed(3)}s`); }
     }
   }
-  assert.equal(chromatic, 0, 'below the top of the fader the bass makes no chromatic approaches');
+  assert.equal(chromatic, 0, 'below the Difícil level the bass makes no chromatic approaches');
 });
-test('at the top of the fader the walking bass plays eighths, some of them chromatic approaches', () => {
+test('at the Difícil level the walking bass plays eighths, some of them chromatic approaches', () => {
   let eighths = 0, chrom = 0;
   for (const seed of [1, 2, 3, 4]) {
     const notes = render('swing', 'piano', { num: 4, den: 4 }, 1, seed, 1).filter(n => n.kind === 'bass');
@@ -158,7 +158,7 @@ test('swing bass sometimes plays a swung pair of eighths', () => {
   const offbeats = notes.filter(n => Math.abs(((n.t - n.b.t) / 0.5) - 0.62) < 0.08);
   assert.ok(offbeats.length >= 3, `only ${offbeats.length} swung eighths`);
 });
-test('the complexity fader: busier = more drum and harmony events, simple = two-feel bass', () => {
+test('complexity: busier = more drum and harmony events, simple = two-feel bass', () => {
   for (const m of [{ num: 4, den: 4 }, { num: 7, den: 4, groups: [2, 2, 2, 2, 3, 3] }]) {
     const count = cx => { let d = 0, c = 0; for (const seed of [1, 2, 3, 4]) { const n = render('swing', 'piano', m, 1, seed, cx); d += n.filter(x => x.kind === 'drum').length; c += n.filter(x => x.kind === 'chord').length; } return [d, c]; };
     const [d0, c0] = count(0), [d1, c1] = count(1);
@@ -210,7 +210,7 @@ test('bass: simpler settings play fewer and longer notes', () => {
     assert.ok(d0 > d5 && d5 >= d1 * 0.95, `${style} ${m.num}/${m.den}: avg length ${d0.toFixed(2)} ${d5.toFixed(2)} ${d1.toFixed(2)}`);
   }
 });
-test('no chromatic approaches; occasional ghost notes on swung eighths instead', () => {
+test('occasional ghost notes, always short', () => {
   let ghosts = 0;
   for (const seed of [1, 2, 3, 4]) for (const m of [{ num: 4, den: 4 }, { num: 3, den: 4 }]) {
     for (const n of render('swing', 'piano', m, 1, seed, 0.8).filter(q => q.kind === 'bass')) {
@@ -256,9 +256,9 @@ test('chromatic approach notes always resolve a semitone away, never an octave o
       assert.equal(Math.abs(b.midi - a.midi), 1, `approach ${a.midi} → ${b.midi}`);
     }
   }
-  assert.ok(n > 0, 'expected some chromatic approaches at the top of the fader');
+  assert.ok(n > 0, 'expected some chromatic approaches at the Difícil level');
 });
-test('the middle of the fader walks in quarter notes (4/4 swing)', () => {
+test('the Normal level walks in quarter notes (4/4 swing)', () => {
   let withBass = 0, beats = 0;
   for (const seed of [1, 2, 3, 4]) {
     const all = render('swing', 'piano', { num: 4, den: 4 }, 2, seed, 0.5);
@@ -267,4 +267,89 @@ test('the middle of the fader walks in quarter notes (4/4 swing)', () => {
     beats += beatTimes.size; withBass += bassOnBeat.size;
   }
   assert.ok(withBass / beats > 0.9, `bass on ${withBass} of ${beats} beats`);
+});
+
+// --- the three levels (Simple 0.2, Normal 0.5, Difícil 1) ---
+const LEVELS = [0.2, 0.5, 1], M44 = { num: 4, den: 4 };
+const frac = n => (n.t - n.b.t) / 0.5;            // where in its beat a note falls (the tests render at 0.5 s per beat)
+
+test('walking bass never plays the same note twice in a row', () => {
+  for (const m of [M44, { num: 3, den: 4 }, { num: 5, den: 4 }]) for (const cx of LEVELS) for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const notes = render('swing', 'piano', m, 2, seed, cx).filter(n => n.kind === 'bass' && !n.ghost);
+    for (let i = 1; i < notes.length; i++) assert.notEqual(notes[i].midi, notes[i - 1].midi, `${m.num}/${m.den} cx${cx} seed${seed}: ${notes[i].midi} repeated`);
+  }
+});
+test('ghost notes fall only on the weak eighth, and Simple has none', () => {
+  let ghosts = 0;
+  for (const cx of LEVELS) for (const seed of [1, 2, 3, 4, 5, 6]) {
+    for (const n of render('swing', 'piano', M44, 2, seed, cx).filter(x => x.kind === 'bass' && x.ghost)) {
+      assert.ok(cx > 0.3, 'no ghost notes at the Simple level');
+      assert.ok(Math.abs(frac(n) - 0.62) < 0.08, `ghost note at ${frac(n).toFixed(2)} of the beat`);
+      ghosts++;
+    }
+  }
+  assert.ok(ghosts >= 4, `only ${ghosts} ghost notes`);
+});
+test('chromatic passing notes: weak eighths only, between two neighbours a semitone and a step away', () => {
+  let n = 0;
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const notes = render('swing', 'piano', M44, 2, seed, 1).filter(x => x.kind === 'bass' && !x.ghost);
+    for (let i = 1; i < notes.length - 1; i++) {
+      const a = notes[i], ch = a.b.ev.chord;
+      if (Object.values(ch.iv).map(k => (ch.root + k) % 12).includes(a.midi % 12)) continue;
+      if (!notes[i + 1].b.chordStart) continue;       // (a scale tone inside the chord, not an approach)
+      n++;
+      assert.ok(Math.abs(frac(a) - 0.62) < 0.08, `chromatic note at ${frac(a).toFixed(2)} of the beat`);
+      assert.equal(Math.abs(notes[i + 1].midi - a.midi), 1, `resolves ${a.midi} → ${notes[i + 1].midi}`);
+      assert.ok(Math.abs(a.midi - notes[i - 1].midi) <= 7, `reached by a leap: ${notes[i - 1].midi} → ${a.midi}`);
+    }
+  }
+  assert.ok(n >= 4, `only ${n} chromatic passing notes`);
+});
+test('harmony: some short, dry chords (never in a ballad), most of them long', () => {
+  for (const cx of LEVELS) {
+    let stabs = 0, all = 0;
+    for (const seed of [1, 2, 3, 4]) for (const n of render('swing', 'piano', M44, 2, seed, cx).filter(x => x.kind === 'chord')) {
+      all++;
+      if (n.stab) { stabs++; assert.ok(n.dur <= 0.12, `a dry chord lasts ${n.dur.toFixed(2)}s`); }
+    }
+    assert.ok(stabs > 0 && stabs < all * 0.45, `cx${cx}: ${stabs} dry chords of ${all}`);
+  }
+  for (const seed of [1, 2, 3]) assert.ok(render('ballad', 'piano', M44, 2, seed, 1).every(n => !n.stab), 'no dry chords in a ballad');
+});
+test('harmony unfolds inside a chord: other inversions nearby, no big jumps, no minor ninths', () => {
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  for (const harmony of ['piano', 'guitar']) {
+    let moved = 0, same = 0;
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const chords = render('swing', harmony, M44, 2, seed, 0.5).filter(x => x.kind === 'chord');
+      for (const c of chords) for (let i = 0; i < c.midis.length; i++) for (let j = i + 1; j < c.midis.length; j++) {
+        const d = Math.abs(c.midis[j] - c.midis[i]);
+        assert.ok(!(d >= 13 && d % 12 === 1), `minor ninth in ${c.midis}`);
+      }
+      for (let i = 1; i < chords.length; i++) {
+        const a = chords[i - 1], b = chords[i];
+        assert.ok(Math.abs(avg(b.midis) - avg(a.midis)) <= 7, `${harmony}: jump ${a.midis} → ${b.midis}`);
+        if (a.b.ev !== b.b.ev || a.ant || b.ant) continue;
+        if (a.midis.join() === b.midis.join()) same++; else moved++;
+      }
+    }
+    assert.ok(moved > 0, `${harmony}: the chord never unfolds`);
+    assert.ok(same > 0, `${harmony}: the chord never stays`);
+  }
+});
+test('drums: an occasional soft crash, a few snare hits per bar', () => {
+  for (const cx of LEVELS) {
+    let crash = 0, snare = 0, bars = 0;
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const all = render('swing', 'piano', M44, 2, seed, cx);
+      bars += new Set(all.map(x => x.b.t)).size / 4;
+      for (const n of all.filter(x => x.kind === 'drum')) {
+        if (n.name === 'crash') { crash++; assert.ok(n.v <= 0.6, `crash at ${n.v.toFixed(2)}`); }
+        if (n.name === 'snare') snare++;
+      }
+    }
+    assert.ok(crash >= 2 && crash <= bars / 4, `cx${cx}: ${crash} crashes in ${bars} bars`);
+    assert.ok(snare / bars >= 1, `cx${cx}: ${(snare / bars).toFixed(1)} snare hits per bar`);
+  }
 });
