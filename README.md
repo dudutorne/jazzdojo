@@ -59,13 +59,18 @@ Creada per **Edu Torné**. Llicència [CC BY-NC-SA 4.0](https://creativecommons.
     diferent.
   - En 3/4 l'acompanyament fa vals de jazz: charles al 2 i al 3, baix «1 · 3» o walking, i de vegades una hemiòlia de
     6/8 (accents a l'1 i a la segona corxera del 2).
-- **Complexitat de l'acompanyament** (pestanya Mix): un fader de simple a ric. Amb el fader avall, la bateria fa menys
-  notes fantasma i redobles, el piano toca menys cops i el baix de swing va a 2 (blanques). Amb el fader amunt hi ha més
-  subdivisió, més comping, més corxeres swingades al baix i més anticipacions. El ride sempre manté un pols estable.
-- **Baix segons la complexitat:** amb el fader avall fa notes llargues (una rodona per compàs, o una blanca amb punt
-  i una negra); al mig, blanques i walking; amunt, walking amb alguna corxera swingada.
-- **Baix:** no fa aproximacions cromàtiques. Les notes de pas són notes de l'acord o la quinta del següent, i de tant
-  en tant fa una nota fantasma (apagada) a la corxera swingada. Per defecte sona més fluix que la resta.
+- **Complexitat de l'acompanyament** (pestanya Mix): tres nivells. **Simple:** el baix fa notes llargues, poc comping i
+  poca bateria. **Normal** (per defecte): el baix camina a negres (o fa el patró de bossa, etc.) amb alguna nota
+  fantasma. **Difícil:** més corxeres al baix, més cops de l'harmonia, més caixa i més anticipacions. El ride sempre
+  manté un pols estable.
+- **Baix:** evita repetir la mateixa nota dues vegades seguides. Les notes fantasma són soroll de corda apagada, sense
+  to definit, i només cauen a la corxera del temps feble. Els cromatismes només surten al nivell Difícil, sempre en
+  corxeres i de pas: la nota cromàtica queda a un semitò real de la nota on resol, mai amb un salt d'octava pel mig.
+- **Harmonia:** els voicings són inversions tancades i drop 2, sense novenes menors entre veus. Quan un acord dura, es
+  desplega cap amunt o cap avall amb passos petits en lloc de repetir la mateixa posició, i de tant en tant fa un
+  acord sec (curt).
+- **Bateria i sala:** caixa ocasional amb dotze mostres de dinàmiques diferents, algun crash suau a l'inici de frase o
+  després d'un redoble, i un 5% de reverberació a l'harmonia i la bateria.
 - **Agrupaments i accents:** en els compassos de x/4 escrits en corxeres, els grups de 2 consecutius es noten com a
   grups de 4. Un 7/4 en 2+2+2+2+3+3 sona com 4+4+3+3.
 - **Ride:** en els compassos d'amalgama el ride sempre va a corxeres. En els de x/4 (5/4, 7/4…) frasseja com si
@@ -128,7 +133,16 @@ En cada canvi a `main`, GitHub Actions (`.github/workflows/pages.yml`) passa els
 npm run dev        # build + servidor local a http://localhost:8080
 ```
 
-Per regenerar les mostres cal fer clons parcials dels repositoris originals, i després:
+Els sons millors (contrabaix i piano reals amb capes de dinàmica, sorolls de corda apagada, més caixes i el crash) no
+són al repositori: els baixa i els prepara `tools/sounds.py` (cal `git` i `ffmpeg`) a la carpeta `sounds/`, i
+`npm run build` els posa per sobre de les mostres de `public/samples`. GitHub Actions ho fa a cada publicació. Si
+`sounds/` no hi és, l'app sona amb les mostres del repositori.
+
+```bash
+python3 tools/sounds.py && npm run build
+```
+
+Per regenerar les mostres de `public/samples` cal fer clons parcials dels repositoris originals, i després:
 
 ```bash
 python3 tools/samples.py   # variables SF i VD: on són les fonts
@@ -145,14 +159,19 @@ python3 tools/logo.py <Saira-Black.ttf> <Saira-SemiBold.ttf> public/icons
 - **Dades locals:** els exercicis i els ajustos es guarden al navegador de cada dispositiu i no se sincronitzen.
 - **Ajuda:** les notes de l'arpegi s'escriuen amb la lletra que toca (el 7 de C7 és B♭, no A♯). Els dobles sostinguts i
   bemolls se simplifiquen.
-- **Mostres:** són d'una sola capa de dinàmica per nota (bancs de so General MIDI), així que el so és més senzill que
-  el d'iReal Pro.
+- **Mostres:** el Rhodes, les guitarres i el baix elèctric són d'una sola capa de dinàmica per nota (bancs de so
+  General MIDI), així que el seu so és més senzill que el del piano i el contrabaix.
 
 ## Crèdits i llicències
 
 - **App i codi:** © 2026 Edu Torné, llicència [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/): es pot compartir i adaptar citant l'autor, sense ús comercial i amb la mateixa llicència.
-- **Contrabaix, piano i Rhodes:** MusyngKite; **guitarra jazz, baix elèctric i guitarra elèctrica:** FatBoy. Tots dos de
-  [gleitz/midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts), llicència CC BY-SA 3.0. Les mostres s'han convertit a mono i s'han retallat.
+- **Contrabaix:** [D. Smolken Double Bass](https://github.com/sfzinstruments/dsmolken.double-bass), llicència CC0.
+- **Piano:** [Salamander Grand Piano](https://github.com/sfzinstruments/SalamanderGrandPiano), d'Alexander Holm,
+  llicència [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Les mostres s'han convertit a mono, s'han retallat
+  i s'han igualat de volum.
+- **Rhodes:** MusyngKite; **guitarra jazz, baix elèctric i guitarra elèctrica:** FatBoy (i el contrabaix i el piano de
+  reserva, MusyngKite). Tots de [gleitz/midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts), llicència
+  CC BY-SA 3.0. Les mostres s'han convertit a mono i s'han retallat.
 - **Bateria:** [Virtuosity Drums](https://github.com/sfzinstruments/virtuosity_drums), de Versilian Studios / Virtuosity
   Musical Instruments, llicència CC0.
 - **Tipografia:** [Saira](https://github.com/google/fonts/tree/main/ofl/sairasemicondensed), llicència SIL OFL 1.1.

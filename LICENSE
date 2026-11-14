@@ -14,3 +14,7 @@ Third-party material included in this repository keeps its own license:
 - Sound samples from gleitz/midi-js-soundfonts (MusyngKite, FatBoy): CC BY-SA 3.0.
 - Drum samples from Virtuosity Drums: CC0.
 - Fonts Saira and Fira Sans Extra Condensed: SIL Open Font License 1.1 (see public/fonts/).
+
+Third-party material fetched when the app is built (tools/sounds.py), not stored in this repository:
+- Double bass samples by D. Smolken (sfzinstruments/dsmolken.double-bass): CC0.
+- Salamander Grand Piano by Alexander Holm (sfzinstruments/SalamanderGrandPiano): CC BY 3.0.
