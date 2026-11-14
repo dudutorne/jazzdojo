@@ -21,6 +21,16 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npm test
+      # the better sounds are not in the repository: they are fetched and prepared here (kept between runs)
+      - uses: actions/cache@v4
+        with:
+          path: sounds
+          key: sounds-${{ hashFiles('tools/sounds.py', 'public/samples/manifest.json') }}
+      - name: Prepare the sounds
+        run: |
+          which ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+          python3 tools/sounds.py
+        continue-on-error: true
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
