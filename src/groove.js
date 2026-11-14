@@ -132,36 +132,70 @@ export class Groove {
   }
 
   /** Voicing register: low-middle (guitar around G2–D4, keys around C3–G4), moving as little as possible. */
-  voiceFor(ch, inst, style) {
+  voiceFor(ch, inst, style, vary = false) {
     const c = style === 'even' ? popChord(ch) : ch;
-    if (inst === 'guitar') return this.voicing(c, 43, 62, style === 'even' ? 4 : 3, 52);
-    return this.voicing(c, 46, 66, 4, 55);
+    if (inst === 'guitar') return this.voicing(c, 43, 62, style === 'even' ? 4 : 3, 52, vary);
+    return this.voicing(c, 48, 67, 4, 57, vary);
   }
 
-  /** Close rootless voicing with smooth voice leading. */
-  voicing(ch, lo, hi, maxNotes = 4, center = (lo + hi) / 2) {
+  /**
+   * Candidate voicings: every inversion of the close-position voicing and its drop-2 (the second voice from the top
+   * dropped an octave, the classic jazz piano/guitar sound). Rejected: any minor 9th between two voices, and a voice a
+   * semitone under the root down in the bass register (it rubs against the bass, e.g. the B of Cmaj9 against the C).
+   * Minor 2nds are allowed but cost. Among the good ones it follows the previous voicing; `vary` (or now and then
+   * by chance) picks another inversion/drop-2 nearby, so the chord unfolds instead of repeating the same shape.
+   */
+  voicing(ch, lo, hi, maxNotes = 4, center = (lo + hi) / 2, vary = false) {
     const pcs = ch.tones.slice(0, maxNotes).map(i => (ch.root + i) % 12);
-    const target = this.lastVoicing ? this.lastVoicing.reduce((a, b) => a + b, 0) / this.lastVoicing.length : center;
-    let best = null, bestScore = 1e9;
+    const rootPc = ch.bass ?? ch.root;
+    const last = this.lastVoicing;
+    const target = last ? last.reduce((a, b) => a + b, 0) / last.length : center;
+    const lastTop = last ? last[last.length - 1] : center + 5;
+    const cands = [];
+    const consider = notes => {
+      if (notes[0] < lo || notes[notes.length - 1] > hi) return;
+      let m2 = 0;
+      for (let i = 0; i < notes.length; i++) for (let j = i + 1; j < notes.length; j++) {
+        const d = notes[j] - notes[i];
+        if (d >= 13 && d % 12 === 1) return;            // minor 9th (or wider) between two voices: never
+        if (d === 1) m2++;
+      }
+      // seconds down low sound muddy
+      let mud = 0;
+      for (let i = 0; i + 1 < notes.length; i++) if (notes[i + 1] - notes[i] <= 2 && notes[i] < 55) mud++;
+      // a semitone under the root, low down, clashes with the bass (maj7 under the root → minor 9th / minor 2nd)
+      if (notes.some(n => n < lo + 7 && ((rootPc - n) % 12 + 12) % 12 === 1)) return;
+      const avg = notes.reduce((a, b) => a + b, 0) / notes.length;
+      const top = notes[notes.length - 1];
+      const move = Math.abs(avg - target);
+      const score = move + Math.max(0, move - 3) * 2 + Math.abs(top - lastTop) * 0.4 + Math.abs(avg - center) * 0.3
+        + Math.max(0, top - (hi - 3)) * 1.5 + m2 * 5 + mud * 3;
+      const key = notes.join(',');
+      if (!cands.some(c => c.key === key)) cands.push({ notes, score, key });
+    };
     for (let r = 0; r < pcs.length; r++) {
       const order = pcs.slice(r).concat(pcs.slice(0, r));
-      for (let base = lo; base < lo + 12; base++) {
+      for (let base = lo - 12; base < hi; base++) {
         if (base % 12 !== order[0]) continue;
-        const notes = [base];
-        for (let k = 1; k < order.length; k++) { let m = notes[k - 1] + 1; while (m % 12 !== order[k]) m++; notes.push(m); }
-        if (notes[notes.length - 1] > hi) continue;
-        const avg = notes.reduce((a, b) => a + b, 0) / notes.length;
-        // smooth voice leading: stay close to the previous voicing (its average and its top note), with only a gentle
-        // pull towards the middle so the comping doesn't creep up or down over time; big jumps are penalised hard
-        const top = notes[notes.length - 1], lastTop = this.lastVoicing ? this.lastVoicing[this.lastVoicing.length - 1] : center + 5;
-        const move = Math.abs(avg - target);
-        const score = move + Math.max(0, move - 3) * 2 + Math.abs(top - lastTop) * 0.4 + Math.abs(avg - center) * 0.3
-          + Math.max(0, top - (hi - 3)) * 1.5;
-        if (score < bestScore) { bestScore = score; best = notes; }
+        const close = [base];
+        for (let k = 1; k < order.length; k++) { let m = close[k - 1] + 1; while (m % 12 !== order[k]) m++; close.push(m); }
+        consider(close);
+        if (close.length === 4) consider([close[2] - 12, close[0], close[1], close[3]].sort((x, y) => x - y)); // drop 2
       }
     }
-    if (!best && hi < lo + 30) return this.voicing(ch, lo, hi + 3, maxNotes, center); // wide voicing: allow a little more room
-    this.lastVoicing = best || [lo + 10, lo + 14, lo + 17];
+    if (!cands.length) {
+      if (hi < lo + 30) return this.voicing(ch, lo, hi + 3, maxNotes, center, vary); // allow a little more room
+      this.lastVoicing = last || [lo + 4, lo + 10, lo + 14];
+      return this.lastVoicing;
+    }
+    cands.sort((x, y) => x.score - y.score);
+    let pick = cands[0];
+    if (vary || this.rng() < 0.2) {
+      // unfold the chord: another good shape close by (not the same notes as now)
+      const near = cands.filter(c => c.score < cands[0].score + 4 && (!last || c.key !== last.join(','))).slice(0, 4);
+      if (near.length) pick = near[Math.floor(this.rng() * near.length)];
+    }
+    this.lastVoicing = pick.notes;
     return this.lastVoicing;
   }
 
@@ -199,6 +233,8 @@ export class Groove {
       this.antNext = false;
       this.compPlan = [];
     }
+    // within a long chord the harmony sometimes moves to another inversion / drop-2 of the same chord
+    else if (ch && !info.chordStart && info.bi % 2 === 0 && this.voice && this.rng() < 0.25) this.voice = this.voiceFor(ch, inst, style, true);
     this.antSkip = info.chordStart ? antSkip : this.antSkip;
     const chordEnd = t + (ev.beats - info.bi) * spb; // never ring past the chord
     const C = (tt, durSec, vel, roll = 0, midis = this.voice) => {
