@@ -18,8 +18,8 @@ export function setLang(v) {
 
 const EN = {
   'Com funciona?': 'How it works',
-  'Practica arpegis sobre una progressió d\'acords sense veure els acords: només els graus que has de tocar.':
-    'Practise arpeggios over a chord progression without seeing the chords: only the degrees you have to play.',
+  'JazzDojo et proposa arpegis sobre una progressió d\'acords. Està pensada per a progressions que et sàpigues de memòria, tot i que també hi ha l\'opció de visualitzar els acords.':
+    'JazzDojo gives you arpeggios over a chord progression. It is meant for progressions you know by heart, although you can also choose to see the chords.',
   'Tria un exercici a «Exercicis». També en pots importar d\'iReal Pro, escriure els acords o crear-ne per cicles.':
     'Pick an exercise in “Exercises”. You can also import one from iReal Pro, type the chords or build one from cycles.',
   'Prem ▶. Després del compte d\'entrada sona la banda: baix, bateria i harmonia.':
@@ -126,8 +126,8 @@ const EN = {
 
 const ES = {
   'Com funciona?': '¿Cómo funciona?',
-  'Practica arpegis sobre una progressió d\'acords sense veure els acords: només els graus que has de tocar.':
-    'Practica arpegios sobre una progresión de acordes sin ver los acordes: solo los grados que tienes que tocar.',
+  'JazzDojo et proposa arpegis sobre una progressió d\'acords. Està pensada per a progressions que et sàpigues de memòria, tot i que també hi ha l\'opció de visualitzar els acords.':
+    'JazzDojo te propone arpegios sobre una progresión de acordes. Está pensada para progresiones que te sepas de memoria, aunque también tienes la opción de ver los acordes.',
   'Tria un exercici a «Exercicis». També en pots importar d\'iReal Pro, escriure els acords o crear-ne per cicles.':
     'Elige un ejercicio en «Ejercicios». También puedes importarlos de iReal Pro, escribir los acordes o crearlos por ciclos.',
   'Prem ▶. Després del compte d\'entrada sona la banda: baix, bateria i harmonia.':
