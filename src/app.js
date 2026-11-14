@@ -22,7 +22,7 @@ const DEF = {
   degrees: [1, 3, 5, 7, 9], len: 5, source: 'random', order: 'shuffle',
   sets: [{ id: 'set1', name: 'Bàsics', text: '13579, 53971, 97531, 35791, 1357, 7531' }], setId: 'set1',
   change: 'chord', every: { beats: 2, bars: 2 }, syncChord: true, laps: 'new',
-  leadBeats: 2, harmonyPop: 'piano', countBars: 1, complexity: 0.5, harmony: 'piano', theme: 'dark', vol: { bass: 0.5, drums: 0.7, comp: 0.6, master: 0.85 },
+  leadBeats: 2, harmonyPop: 'piano', countBars: 1, complexity: 0.5, harmony: 'piano', theme: 'dark', vol: { bass: 0.35, drums: 0.7, comp: 0.6, master: 0.85 },
   songId: null, songPrefs: {}, hideNames: false,
 };
 const S = Object.assign({}, DEF, store.get('jd.settings', {}));
@@ -81,8 +81,10 @@ if (S.v < 7) {
 }
 // v8: the complexity fader starts in the middle ("Normal") again
 if (S.v < 8) { S.complexity = 0.5; S.v = 8; }
-// v9: three levels instead of a fader: Simple, Normal, Difícil
+// v9: three levels instead of a fader: Simple, Normal, Alta
 if (S.v < 9) { S.v = 9; }
+// v10: the bass is quieter by default (35)
+if (S.v < 10) { if (S.vol.bass === 0.5) S.vol.bass = 0.35; S.v = 10; }
 S.complexity = S.complexity < 0.35 ? 0.2 : S.complexity <= 0.7 ? 0.5 : 1;
 const saveLib = () => store.set('jd.library', library);
 
@@ -576,7 +578,9 @@ $('setName').oninput = e => { curSet().name = e.target.value || 'Sense nom'; sav
 let patT = 0;
 $('patterns').oninput = e => { curSet().text = e.target.value; saveS(); clearTimeout(patT); patT = setTimeout(() => { arpsChanged(); renderArpPane(); }, 400); };
 // sound
-$('styleSeg').onclick = e => { const v = segVal(e); if (!v) return; prefs().style = v; saveS(); renderSoPane(); renderHead(); if (audio.ctx) ensureSamples(); };
+// each style starts with its usual harmony instrument: guitar for bossa, piano for the rest
+const STYLE_HARMONY = { swing: 'piano', bossa: 'guitar', even: 'piano', ballad: 'piano' };
+$('styleSeg').onclick = e => { const v = segVal(e); if (!v) return; prefs().style = v; if (v === 'even') S.harmonyPop = STYLE_HARMONY.even; else S.harmony = STYLE_HARMONY[v]; saveS(); renderSoPane(); renderHead(); if (audio.ctx) ensureSamples(); };
 $('harmSeg').onclick = e => { const v = segVal(e); if (!v) return; if (isPop()) S.harmonyPop = v; else S.harmony = v; saveS(); setSeg('harmSeg', v); if (audio.ctx) ensureSamples(); renderSoundStatus(); };
 $('countSeg').onclick = e => { const v = segVal(e); if (v == null) return; S.countBars = +v; saveS(); setSeg('countSeg', v); };
 $('cxSeg').onclick = e => { const v = segVal(e); if (v == null) return; S.complexity = +v; saveS(); setSeg('cxSeg', v); };

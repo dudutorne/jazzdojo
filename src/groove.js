@@ -335,14 +335,17 @@ export class Groove {
     // skips to chord tones and chromatic passing notes into the next chord
     const top = Math.max(0, (cx - 0.7) / 0.3);
     const walkOpts = { pairs: true, pChrom: 0.65 * top, pSkip: 0.12 + 0.22 * top, pGhost: 1 - 0.45 * top };
-    return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, level, m: 0.3 + 1.4 * cx,
+    // the drums sit one step above the level: Normal plays what used to be the busiest groove, Alta goes further
+    // (more snare comping, triplet ghost notes, longer fills, kick/snare conversations)
+    const dcx = level === 1 ? cx : 1, dm = [0.3 + 1.4 * cx, 1.7, 2.4][level - 1], dhi = level === 3;
+    return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, level, m: 0.3 + 1.4 * cx, dcx, dm, dhi,
       bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.6 + 2 * hcx, top, walkOpts };
   }
 
   /* ================= 4/4 in quarters: hand-tuned grooves ================= */
   beat44(info, o, x) {
     const { t, spb, ev, bi } = info;
-    const { D, B, C, off, sw, style, ch, inst, cx, bcx, hcx, m: busy } = x;
+    const { D, B, C, off, sw, style, ch, inst, cx, bcx, hcx, dm: busy, dcx, dhi } = x;
     const num = 4, b = info.bib;
     const lastBeatOfPhrase = b === num - 1 && info.barNo % 4 === 0;
 
@@ -353,16 +356,24 @@ export class Groove {
       if (back) D('hhpedal', t, 0.75);
       if (this.rng() < 0.55) D('kick', t, 0.18);
       // snare comping: ghost notes on the "and" and the odd accent on the beat
-      if (this.rng() < Math.min(0.56, 0.44 * busy)) D('snare', off, 0.22 * this.r(0.8, 1.2));
-      if (this.rng() < Math.min(0.26, 0.19 * busy)) D('snare', t, 0.42 * this.r(0.8, 1.15));
-      if (cx > 0.7 && !back && this.rng() < 0.15 * busy) D('kick', off, 0.3);          // busier: kick/snare chatter
+      if (this.rng() < Math.min(dhi ? 0.7 : 0.56, 0.44 * busy)) D('snare', off, 0.22 * this.r(0.8, 1.2));
+      if (this.rng() < Math.min(dhi ? 0.36 : 0.26, 0.19 * busy)) D('snare', t, 0.42 * this.r(0.8, 1.15));
+      if (dcx > 0.7 && !back && this.rng() < 0.15 * busy) D('kick', off, 0.3);          // busier: kick/snare chatter
+      if (dhi) {
+        // Alta: triplet ghost notes inside the beat, the odd skip on the ride, snare answered by the kick
+        if (this.rng() < 0.22) D('snare', t + spb / 3, 0.16 * this.r(0.8, 1.2));
+        if (!back && this.rng() < 0.3) D('ride', off, 0.34);
+        if (this.rng() < 0.12) { D('snare', t, 0.36); D('kick', off, 0.34); }
+      }
       // kick punctuations ("bombs"): the "and" of the last beat before a chord change, and the odd off-beat drop
-      if (info.nextEv && ev.beats - bi === 1 && this.rng() < 0.12 + 0.4 * cx) D('kick', off, 0.32 + 0.16 * cx);
-      else if (this.rng() < 0.07 * busy) D('kick', this.rng() < 0.5 ? off : t, 0.28 + 0.15 * cx);
+      if (info.nextEv && ev.beats - bi === 1 && this.rng() < 0.12 + 0.4 * dcx) D('kick', off, 0.32 + 0.16 * dcx);
+      else if (this.rng() < 0.07 * busy) D('kick', this.rng() < 0.5 ? off : t, 0.28 + 0.15 * dcx);
       // a soft crash now and then: after a fill, or at the top of an eight-bar phrase
       if (b === 0 && info.barNo > 1 && this.rng() < (this.fillDone ? 0.45 : info.barNo % 8 === 1 ? 0.4 : 0.03)) { D('crash', t, this.r(0.26, 0.4)); if (this.rng() < 0.7) D('kick', t, 0.5); }
       if (b === 0) this.fillDone = false;
       if (lastBeatOfPhrase && this.rng() < Math.min(0.95, 0.7 * busy)) { D('snare', t, 0.5); D('snare', t + spb / 3, 0.3); D('snare', off, 0.6); if (this.rng() < 0.4) D('kick', off, 0.6); this.fillDone = true; }
+      // Alta: a longer fill (two beats of triplets) at the end of an eight-bar phrase
+      else if (dhi && b === num - 2 && info.barNo % 8 === 0 && this.rng() < 0.8) { for (let k = 0; k < 3; k++) D('snare', t + k * spb / 3, 0.3 + 0.1 * k); D('kick', off, 0.45); }
       if (b === 0 && info.barNo % 8 === 1 && info.barNo > 1 && this.rng() < busy) D('kick', t, 0.55);
     } else if (style === 'ballad') {
       D('ride', t, b === 0 ? 0.42 : 0.34);
@@ -370,6 +381,7 @@ export class Groove {
       if (b === 0) D('kick', t, 0.3);
       if (b === 2 && this.rng() < 0.3) D('xstick', t, 0.35);
       if (this.rng() < 0.2 * busy) D('snare', off, 0.14);
+      if (dhi && b === 3 && info.barNo % 4 === 0 && this.rng() < 0.6) { D('snare', t, 0.24); D('snare', off, 0.3); }
       if (b === 0 && info.barNo > 1 && info.barNo % 8 === 1 && this.rng() < 0.3) D('crash', t, 0.22);
     } else if (style === 'bossa') {
       D('hhclosed', t, b === 0 ? 0.55 : 0.45); D('hhclosed', off, 0.3);
@@ -379,14 +391,22 @@ export class Groove {
       if (clave.includes(e)) D('xstick', t, 0.7);
       if (clave.includes(e + 1)) D('xstick', off, 0.7);
       if (!clave.includes(e + 1) && this.rng() < 0.24 * busy) D('snare', off, 0.16);   // soft ghost notes between the clave
+      if (dhi && b % 2 === 1 && this.rng() < 0.35) D('kick', off, 0.3);                 // Alta: the kick plays around the surdo pattern
+      if (dhi && b === num - 1 && info.barNo % 4 === 0 && this.rng() < 0.7) { D('snare', t, 0.3); D('snare', t + spb / 4, 0.22); D('snare', off, 0.36); D('snare', t + 0.75 * spb, 0.42); this.fillDone = true; }
       if (b === 0 && info.barNo > 1 && info.barNo % 8 === 1 && this.rng() < 0.3) D('crash', t, 0.24);
     } else {
       D('hhclosed', t, 0.6); D('hhclosed', off, 0.38);
       if (b % 2 === 0) D('kick', t, 0.85); else D('snare', t, 0.8);
       if (b === num - 2 && this.rng() < 0.45 * busy) D('kick', off, 0.6);
+      if (dhi) {
+        // Alta: sixteenth-note kicks, snare ghost notes and open hi-hat on the "and"
+        if (b % 2 === 0 && this.rng() < 0.3) D('kick', t + 0.75 * spb, 0.45);
+        if (b % 2 === 1 && this.rng() < 0.35) D('snare', t + 0.75 * spb, 0.18);
+        if (b === num - 1 && this.rng() < 0.25) D('hhhalf', off, 0.4);
+      }
       if (b === 0 && info.barNo > 1 && this.rng() < (this.fillDone ? 0.6 : info.barNo % 8 === 1 ? 0.5 : 0)) D('crash', t, this.r(0.32, 0.45));
       if (b === 0) this.fillDone = false;
-      if (lastBeatOfPhrase && this.rng() < Math.min(1, busy)) { D('snare', off, 0.55); D('snare', t + 0.75 * spb, 0.4); this.fillDone = true; }
+      if (lastBeatOfPhrase && this.rng() < Math.min(1, busy)) { D('snare', off, 0.55); D('snare', t + 0.75 * spb, 0.4); if (dhi) { D('snare', t, 0.5); D('snare', t + 0.25 * spb, 0.45); } this.fillDone = true; }
     }
     if (!ch) return;
 
@@ -521,7 +541,7 @@ export class Groove {
   /* ================= any other meter / grouping: groove built from the eighth-note grid ================= */
   beatGrid(info, o, g, x) {
     const { t, spb, ev, bi } = info;
-    const { D, B, C, off, sw, style, jazz, straight, ch, inst, m: busy } = x;
+    const { D, B, C, off, sw, style, jazz, straight, ch, inst, dm: busy, dhi } = x;
     const pb = g.perBeat;
     // eighths that fall inside this beat, with their bar position and time
     const es = pb === 2 ? [{ j: 0, e: info.bib * 2, tt: t }, { j: 1, e: info.bib * 2 + 1, tt: off }] : [{ j: 0, e: info.bib, tt: t }];
@@ -531,7 +551,7 @@ export class Groove {
     if (info.bib === 0 || !this.bar || this.bar.no !== info.barNo) {
       // per-bar choices: a 6/8 hemiola over 3/4 (accents on 1 and the "and" of 2), fills
       const waltz = o.meter.num === 3 && o.meter.den === 4 && !g.oddGroups;
-      this.bar = { no: info.barNo, hemiola: waltz && this.rng() < 0.35 * busy, fill: info.barNo % 4 === 0 && this.rng() < 0.6 * busy };
+      this.bar = { no: info.barNo, hemiola: waltz && this.rng() < 0.35 * x.m, fill: info.barNo % 4 === 0 && this.rng() < 0.6 * busy };
     }
     const hem = this.bar.hemiola;
     const lastBeat = info.bib === (g.E / pb) - 1;
@@ -546,8 +566,9 @@ export class Groove {
         if (major && e !== 0 && !(hem && e === 2)) D('hhpedal', tt, 0.72);
         if (hem && (e === 0 || e === 3)) { D(e === 0 ? 'kick' : 'snare', tt, e === 0 ? 0.4 : 0.42); if (e === 3) D('ride', tt, 0.55); }
         else if (major && this.rng() < 0.5) D('kick', tt, e === 0 ? 0.3 : 0.18);
-        if (j === 1 && this.rng() < Math.min(0.6, 0.4 * busy)) D('snare', tt, 0.22);
-        else if (j === 0 && this.rng() < Math.min(0.25, 0.14 * busy)) D('snare', tt, 0.4);
+        if (j === 1 && this.rng() < Math.min(dhi ? 0.72 : 0.6, 0.4 * busy)) D('snare', tt, 0.22);
+        else if (j === 0 && this.rng() < Math.min(dhi ? 0.34 : 0.25, 0.14 * busy)) D('snare', tt, 0.4);
+        if (dhi && j === 0 && this.rng() < 0.2) D('snare', tt + spb / 3, 0.16);   // Alta: triplet ghost notes
       } else if (jazz) {
         // odd groupings or x/8: the ride keeps flowing in eighths whatever the grouping; the groups only shape its
         // dynamics. Very fast tempos drop to quarter-note pulses (every 2 eighths, or the group starts in x/8).
@@ -565,11 +586,11 @@ export class Groove {
         else if (major && this.rng() < 0.3) D('kick', tt, 0.22);
         if (major && mi === g.majors.length - 1 && this.rng() < 0.4 * busy) D('xstick', tt, 0.35);
         // kick punctuations: the last eighth before a chord change, and the odd drop elsewhere
-        const cxs = x.cx;
-        if (info.nextEv && ev.beats - bi === 1 && j === pb - 1 && this.rng() < 0.12 + 0.4 * cxs) D('kick', tt, 0.32 + 0.16 * cxs);
+        const cxs = x.dcx;
+        if (info.nextEv && ev.beats - bi === 1 && j === pb - 1 && this.rng() < 0.12 + 0.4 * cxs) D('kick', tt, 0.3 + 0.12 * cxs);
         else if (!major && this.rng() < 0.05 * busy) D('kick', tt, 0.28 + 0.15 * cxs);
-        if (!start && this.rng() < Math.min(0.5, 0.3 * busy)) D('snare', tt, 0.2);
-        else if (start && this.rng() < Math.min(0.22, 0.12 * busy)) D('snare', tt, 0.38);
+        if (!start && this.rng() < Math.min(dhi ? 0.62 : 0.5, 0.3 * busy)) D('snare', tt, 0.2);
+        else if (start && this.rng() < Math.min(dhi ? 0.3 : 0.22, 0.12 * busy)) D('snare', tt, 0.38);
       } else {
         D('hhclosed', tt, start ? 0.55 : 0.32);
         if (major) {
