@@ -33,9 +33,23 @@ function listFiles(dir, base = dir) {
   return fs.readdirSync(dir).flatMap(f => { const p = path.join(dir, f); return fs.statSync(p).isDirectory() ? listFiles(p, base) : [path.relative(base, p)]; });
 }
 
+// Better sounds prepared by tools/sounds.py (optional): laid over the built-in samples, with their own manifest.
+// The built-in sets they replace are left out of the build.
+function overlaySounds(dst) {
+  if (!fs.existsSync(r('sounds/manifest.json'))) return false;
+  const man = JSON.parse(fs.readFileSync(r('sounds/manifest.json'), 'utf8'));
+  for (const [inst, spec] of Object.entries(man)) if (spec.dir && spec.dir !== inst && inst !== 'bassghost') fs.rmSync(path.join(dst, 'samples', inst), { recursive: true, force: true });
+  const old = JSON.parse(fs.readFileSync(r('public/samples/manifest.json'), 'utf8'));
+  for (const [name, files] of Object.entries(old.drums)) if (String(man.drums[name]) !== String(files)) for (const f of files) fs.rmSync(path.join(dst, 'samples/drums', f + '.mp3'), { force: true });
+  copyDir(r('sounds'), path.join(dst, 'samples'));
+  fs.rmSync(path.join(dst, 'samples/.version'), { force: true });
+  return true;
+}
+
 // GitHub Pages
 fs.rmSync(r('docs'), { recursive: true, force: true });
 copyDir(r('public'), r('docs'));
+const extraSounds = overlaySounds(r('docs'));
 const full = `<!doctype html>
 <html lang="ca" data-jd-theme="dark">
 <head>
@@ -67,6 +81,7 @@ fs.writeFileSync(r('docs/.nojekyll'), '');
 // embeddable fragment (the host page adds doctype/head/body)
 fs.rmSync(r('embed'), { recursive: true, force: true });
 copyDir(r('public'), r('embed'));
+overlaySounds(r('embed'));
 fs.rmSync(r('embed/sw.js'));
 fs.writeFileSync(r('embed/index.html'), `${headPart}\n${body}`);
-console.log(`built docs/ and embed/ (${(js.length / 1024).toFixed(0)} KB JS, ${files.length} cached files)`);
+console.log(`built docs/ and embed/ (${(js.length / 1024).toFixed(0)} KB JS, ${files.length} cached files, ${extraSounds ? 'with' : 'without'} the extra sounds)`);
