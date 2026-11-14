@@ -241,3 +241,30 @@ test('ending: one hit of the chord, everything at the same moment', () => {
   assert.equal(n.filter(x => x.kind === 'bass')[0].midi % 12, 5);
   assert.ok(n.find(x => x.kind === 'chord').midis.length >= 3);
 });
+
+test('chromatic approach notes always resolve a semitone away, never an octave off', () => {
+  let n = 0;
+  for (const m of [{ num: 4, den: 4 }, { num: 3, den: 4 }, { num: 5, den: 4 }]) for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const notes = render('swing', 'piano', m, 1, seed, 1).filter(x => x.kind === 'bass' && !x.ghost);
+    for (let i = 0; i < notes.length - 1; i++) {
+      const a = notes[i], b = notes[i + 1];
+      if (!b.b.chordStart || b.b === a.b) continue;
+      const ch = a.b.ev.chord;
+      const pcs = Object.values(ch.iv).map(k => (ch.root + k) % 12);
+      if (pcs.includes(a.midi % 12)) continue; // a chord tone, not a chromatic approach
+      n++;
+      assert.equal(Math.abs(b.midi - a.midi), 1, `approach ${a.midi} → ${b.midi}`);
+    }
+  }
+  assert.ok(n > 0, 'expected some chromatic approaches at the top of the fader');
+});
+test('the middle of the fader walks in quarter notes (4/4 swing)', () => {
+  let withBass = 0, beats = 0;
+  for (const seed of [1, 2, 3, 4]) {
+    const all = render('swing', 'piano', { num: 4, den: 4 }, 2, seed, 0.5);
+    const beatTimes = new Set(all.map(x => x.b.t));
+    const bassOnBeat = new Set(all.filter(x => x.kind === 'bass' && x.t - x.b.t < 0.01).map(x => x.b.t));
+    beats += beatTimes.size; withBass += bassOnBeat.size;
+  }
+  assert.ok(withBass / beats > 0.9, `bass on ${withBass} of ${beats} beats`);
+});
