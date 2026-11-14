@@ -79,6 +79,8 @@ if (S.v < 7) {
   if (d && d.style === 'bossa') { d.style = 'swing'; store.set('jd.library', library); }
   S.v = 7;
 }
+// v8: the complexity fader starts in the middle ("Normal") again
+if (S.v < 8) { S.complexity = 0.5; S.v = 8; }
 const saveLib = () => store.set('jd.library', library);
 
 /* ---------------- runtime state ---------------- */
