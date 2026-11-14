@@ -27,6 +27,7 @@ export class Groove {
   }
   reset() {
     this.lastBass = 36;
+    this.nextTarget = null;
     this.lastVoicing = null;
     this.line = null;
     this.voice = null;
@@ -60,7 +61,12 @@ export class Groove {
   walk(ch, n, nextCh, o = {}) {
     const pairs = !!o.pairs, pChrom = o.pChrom || 0, pSkip = o.pSkip || 0;
     const rootPc = ch.bass ?? ch.root;
-    const root = this.nearest(rootPc, Math.min(Math.max(this.lastBass, 31), 45), 28, 47);
+    // the previous line already aimed at this root (e.g. with a chromatic approach): land exactly there, so the
+    // approach is always a semitone and never jumps an octave
+    const aimed = this.nextTarget;
+    this.nextTarget = null;
+    const root = aimed != null && ((aimed % 12) + 12) % 12 === rootPc && Math.abs(aimed - this.lastBass) <= 7 ? aimed
+      : this.nearest(rootPc, Math.min(Math.max(this.lastBass, 31), 45), 28, 47);
     const pcs = [0, ch.iv[3], ch.iv[5], ch.iv[7], ch.iv[9]].map(i => (ch.root + i) % 12);
     const cands = [];
     for (let m = BASS_LO; m <= BASS_HI; m++) if (pcs.includes(m % 12)) cands.push(m);
@@ -102,11 +108,13 @@ export class Groove {
       if (len >= 2) {
         if (pairs && this.rng() < pChrom) {
           // chord tone on the beat, chromatic leading note on the swung "and" (an eighth, never longer)
-          const lead = clamp(appr >= target ? target + 1 : target - 1);
+          let lead = appr >= target ? target + 1 : target - 1;
+          if (lead > BASS_HI || lead < BASS_LO) lead = lead > target ? target - 1 : target + 1; // stay a semitone away
           out.push({ a: appr, b: lead });
         } else out.push(appr);
       }
       cur = target;
+      if (last) this.nextTarget = target;
     });
     // occasional swung eighths inside the line (skip notes): the second eighth repeats the note or steps to a chord tone
     if (pairs) {
@@ -200,10 +208,10 @@ export class Groove {
     // complexity 0…1 (fader): 0.5 is the default groove; probabilities of extra hits scale ×0.3 … ×1.7
     const cx = o.complexity ?? 0.5;
     // the bass plays a little simpler than the fader says, the harmony clearly richer
-    const bcx = Math.max(0, cx - 0.18), hcx = Math.min(1, cx + 0.3);
+    const bcx = cx, hcx = Math.min(1, cx + 0.3);
     // near the top of the fader the walking bass adds swung eighths, some of them chromatic approach notes
     const top = Math.max(0, (cx - 0.8) / 0.2);
-    const walkOpts = { pairs: true, pChrom: 0.5 * top, pSkip: 0.09 * (0.3 + 1.4 * bcx) + 0.15 * top, pGhost: 0.7 - 0.45 * top };
+    const walkOpts = { pairs: true, pChrom: 0.75 * top, pSkip: 0.06 * (0.3 + 1.4 * bcx) + 0.4 * top, pGhost: 0.7 - 0.5 * top };
     return { out, t, spb, off: t + sw * spb, sw, style, jazz, straight, D, B, C, ch, inst, chordEnd, cx, m: 0.3 + 1.4 * cx,
       bcx, bm: 0.3 + 1.4 * bcx, hcx, hm: 0.6 + 2 * hcx, top, walkOpts };
   }
@@ -225,6 +233,9 @@ export class Groove {
       if (this.rng() < 0.34 * busy) D('snare', off, 0.22 * this.r(0.8, 1.2));
       if (this.rng() < 0.14 * busy) D('snare', t, 0.42 * this.r(0.8, 1.15));
       if (cx > 0.7 && !back && this.rng() < 0.15 * busy) D('kick', off, 0.3);          // busier: kick/snare chatter
+      // kick punctuations ("bombs"): the "and" of the last beat before a chord change, and the odd off-beat drop
+      if (info.nextEv && ev.beats - bi === 1 && this.rng() < 0.12 + 0.4 * cx) D('kick', off, 0.32 + 0.16 * cx);
+      else if (this.rng() < 0.07 * busy) D('kick', this.rng() < 0.5 ? off : t, 0.28 + 0.15 * cx);
       if (lastBeatOfPhrase && this.rng() < Math.min(0.95, 0.7 * busy)) { D('snare', t, 0.5); D('snare', t + spb / 3, 0.3); D('snare', off, 0.6); if (this.rng() < 0.4) D('kick', off, 0.6); }
       if (b === 0 && info.barNo % 8 === 1 && info.barNo > 1 && this.rng() < busy) D('kick', t, 0.55);
     } else if (style === 'ballad') {
@@ -252,9 +263,10 @@ export class Groove {
     // bass
     if (info.chordStart) {
       // how the bass plays this chord depends on the complexity: long notes when simple, walking when busy
-      this.bassMode = bcx < 0.15 ? 'whole'
-        : bcx < 0.35 ? (this.rng() < 0.3 ? 'dotted' : 'two')
-          : bcx < 0.6 ? (this.rng() < (bcx - 0.35) * 3.2 ? 'walk' : 'two')
+      // (from the middle of the fader the bass walks in quarter notes, the most typical jazz bass)
+      this.bassMode = bcx < 0.12 ? 'whole'
+        : bcx < 0.28 ? (this.rng() < 0.3 ? 'dotted' : 'two')
+          : bcx < 0.42 ? (this.rng() < (bcx - 0.28) * 6 ? 'walk' : 'two')
             : 'walk';
       const pairs = style === 'swing' && this.bassMode === 'walk' && bcx >= 0.5;
       this.line = this.walk(ch, ev.beats, info.nextEv && info.nextEv.chord, pairs ? x.walkOpts : {});
@@ -402,6 +414,10 @@ export class Groove {
         if (e === 0) D('kick', tt, 0.4);
         else if (major && this.rng() < 0.3) D('kick', tt, 0.22);
         if (major && mi === g.majors.length - 1 && this.rng() < 0.4 * busy) D('xstick', tt, 0.35);
+        // kick punctuations: the last eighth before a chord change, and the odd drop elsewhere
+        const cxs = x.cx;
+        if (info.nextEv && ev.beats - bi === 1 && j === pb - 1 && this.rng() < 0.12 + 0.4 * cxs) D('kick', tt, 0.32 + 0.16 * cxs);
+        else if (!major && this.rng() < 0.05 * busy) D('kick', tt, 0.28 + 0.15 * cxs);
         if (!start && this.rng() < 0.22 * busy) D('snare', tt, 0.2);
         else if (start && this.rng() < 0.08 * busy) D('snare', tt, 0.38);
       } else {
