@@ -120,7 +120,7 @@ test('harmony sometimes anticipates the next chord by an eighth, and then skips 
 });
 
 const ALLM = [{ num: 4, den: 4 }, ...MET];
-test('chromatic bass notes only at the Difícil level, and never longer than an eighth', () => {
+test('chromatic bass notes only at the Alta level, and never longer than an eighth', () => {
   let chromatic = 0;
   for (const m of ALLM) for (const style of ['swing', 'bossa', 'even', 'ballad']) for (const cx of [0, 0.5, 1]) for (const seed of [3, 9]) {
     const notes = render(style, 'piano', m, 1, seed, cx).filter(n => n.kind === 'bass');
@@ -135,9 +135,9 @@ test('chromatic bass notes only at the Difícil level, and never longer than an 
       if (isChrom) { if (cx < 1) chromatic++; assert.ok(n.dur <= eighth * 1.02, `${style} ${m.num}/${m.den} cx${cx}: chromatic ${n.midi} lasts ${n.dur.toFixed(3)}s`); }
     }
   }
-  assert.equal(chromatic, 0, 'below the Difícil level the bass makes no chromatic approaches');
+  assert.equal(chromatic, 0, 'below the Alta level the bass makes no chromatic approaches');
 });
-test('at the Difícil level the walking bass plays eighths, some of them chromatic approaches', () => {
+test('at the Alta level the walking bass plays eighths, some of them chromatic approaches', () => {
   let eighths = 0, chrom = 0;
   for (const seed of [1, 2, 3, 4]) {
     const notes = render('swing', 'piano', { num: 4, den: 4 }, 1, seed, 1).filter(n => n.kind === 'bass');
@@ -256,7 +256,7 @@ test('chromatic approach notes always resolve a semitone away, never an octave o
       assert.equal(Math.abs(b.midi - a.midi), 1, `approach ${a.midi} → ${b.midi}`);
     }
   }
-  assert.ok(n > 0, 'expected some chromatic approaches at the Difícil level');
+  assert.ok(n > 0, 'expected some chromatic approaches at the Alta level');
 });
 test('the Normal level walks in quarter notes (4/4 swing)', () => {
   let withBass = 0, beats = 0;
@@ -269,7 +269,7 @@ test('the Normal level walks in quarter notes (4/4 swing)', () => {
   assert.ok(withBass / beats > 0.9, `bass on ${withBass} of ${beats} beats`);
 });
 
-// --- the three levels (Simple 0.2, Normal 0.5, Difícil 1) ---
+// --- the three levels (Simple 0.2, Normal 0.5, Alta 1) ---
 const LEVELS = [0.2, 0.5, 1], M44 = { num: 4, den: 4 };
 const frac = n => (n.t - n.b.t) / 0.5;            // where in its beat a note falls (the tests render at 0.5 s per beat)
 
