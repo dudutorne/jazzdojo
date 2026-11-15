@@ -10,7 +10,24 @@ export function getLang() {
     const v = localStorage.getItem(KEY);
     if (LANGS.includes(v)) return v;
   } catch (e) { /* storage unavailable */ }
-  return 'ca'; // Catalan unless another language was chosen
+  return guessLang();
+}
+/**
+ * The first language for someone who hasn't chosen one, from where they are (time zone) and their browser languages:
+ * in Catalonia, Andorra, the rest of Spain… Catalan (it's a Catalan app); elsewhere Catalan or Spanish if the browser
+ * asks for them, otherwise English (so from America or anywhere else it opens in English).
+ */
+export function guessLang() {
+  let tz = '', langs = [];
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* no Intl */ }
+  try { langs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || '']).map(l => String(l).toLowerCase()); } catch (e) { /* no navigator */ }
+  if (/^(Europe\/Madrid|Europe\/Andorra|Atlantic\/Canary|Africa\/Ceuta)$/.test(tz)) return 'ca';
+  for (const l of langs) {
+    if (l.startsWith('ca')) return 'ca';
+    if (l.startsWith('es')) return 'es';
+    if (l.startsWith('en')) return 'en';
+  }
+  return 'en';
 }
 export function setLang(v) {
   try { localStorage.setItem(KEY, v); } catch (e) { /* storage unavailable */ }
