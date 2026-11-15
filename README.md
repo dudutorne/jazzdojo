@@ -5,7 +5,9 @@ amb iReal Pro: la secció rítmica sona, però a la pantalla no surten els acord
 (per exemple `5 3 9 7 1`) que has de tocar sobre l'acord que sona.
 
 Funciona a l'iPhone, a l'iPad i al Mac des del navegador, i es pot instal·lar com una app que funciona sense connexió.
-La interfície està en català, castellà i anglès (botó d'idioma a dalt a la dreta).
+La interfície està en català, castellà i anglès (botó d'idioma a dalt a la dreta). La primera vegada s'obre en
+català des de l'Estat espanyol i Andorra; des d'altres llocs, en l'idioma del navegador (català, castellà o, si no,
+anglès).
 
 Creada per **Edu Torné**. Llicència [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
